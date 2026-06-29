@@ -1,0 +1,29 @@
+gitignore# Build output
+/Debug/
+/Release/
+
+# Object files
+*.o
+*.d
+
+# Compiled binaries
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+
+# CubeIDE launch configurations
+*.launch
+
+# Eclipse project files (optional - some teams commit these)
+# .project
+# .cproject
+# .settings/
+
+# macOS
+.DS_Store
+
+# Backup files
+*.bak
+*.orig
