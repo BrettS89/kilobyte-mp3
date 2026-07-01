@@ -35,26 +35,6 @@ int main() {
 
     if (res == FR_OK) {
 		printf("SD card mounted successfully!\r\n");
-
-		DIR dir;
-		FILINFO fno;
-
-		FRESULT res = f_opendir(&dir, "/");
-		if (res != FR_OK) {
-		    printf("Failed to open directory: %d\r\n", res);
-		} else {
-		    printf("Files on SD card:\r\n");
-		    while (1) {
-		        res = f_readdir(&dir, &fno);
-		        if (res != FR_OK || fno.fname[0] == 0) break;  // end of directory
-		        if (fno.fattrib & AM_DIR) {
-		            printf("  [DIR]  %s\r\n", fno.fname);
-		        } else {
-		            printf("  [FILE] %s\r\n", fno.fname);
-		        }
-		    }
-		    f_closedir(&dir);
-		}
 	} else {
 		printf("Mount failed: %d\r\n", res);
 	}
