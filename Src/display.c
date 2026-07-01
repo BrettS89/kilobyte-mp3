@@ -132,12 +132,11 @@ void drawPixel(uint8_t y, uint8_t x) {
 }
 
 void drawChar(uint8_t row, uint8_t col, char c) {
-	if (col + 8 >= 127) return;
+    if (col + 8 >= 128) return;  // was checking col + 8 >= 127, off by one
 
     for (int i = 0; i < 8; i++) {
-    	uint8_t characterByte = font[(uint8_t)c][i];
-
-    	frameBuffer[row][col + i] = characterByte;
+        uint8_t characterByte = font[(uint8_t)c][i];
+        frameBuffer[row][col + i] = characterByte;
     }
 }
 
@@ -179,17 +178,19 @@ void drawStringShiftedInverse(uint8_t row, uint8_t col, const char *str, uint8_t
 }
 
 void drawString(uint8_t row, uint8_t col, const char *str) {
-	while(*str) {
-		drawChar(row, col, *str);
+    while (*str) {
+        if (col >= 128) return;  // stop if we've run off screen
 
-		if (*str == ' ') {
-			col += 3;
-		}	else {
-			col += 6;
-		}
+        if (*str == ' ') {
+            col += 3;
+        } else {
+            if (col + 8 >= 128) return;  // not enough room for next char
+            drawChar(row, col, *str);
+            col += 6;
+        }
 
-		str++;
-	}
+        str++;
+    }
 }
 
 void oledClear(void) {

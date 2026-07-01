@@ -56,7 +56,13 @@ static void musicScreenScrollUpInputHandler(State *state) {
 }
 
 static void songsScreenScrollUpInputHandler(State *state) {
-	printf("scroll up button pressed in songs screen\r\n");
+	if (state->navigationHistory[state->historyIndex].cursorIndex == 0) {
+		return;
+	}
+
+	state->navigationHistory[state->historyIndex].cursorIndex--;
+
+	drawScreen(state);
 }
 
 static void playerScreenScrollUpInputHandler(State *state) {

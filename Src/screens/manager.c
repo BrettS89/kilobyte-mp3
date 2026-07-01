@@ -32,10 +32,23 @@ void drawScreen(State *state) {
 	}
 }
 
+const char* screenNameToString(ScreenName name) {
+    switch (name) {
+        case HOME:   return "HOME";
+        case MUSIC:  return "MUSIC";
+        case SONGS:  return "SONGS";
+        case RADIO:  return "RADIO";
+        case PLAYER: return "PLAYER";
+        default:     return "UNKNOWN";
+    }
+}
+
 void navigate(State *state, ScreenName screen) {
 	if (state->historyIndex == 4) {
 		return;
 	}
+
+	printf("%s screen:\r\n", screenNameToString(screen));
 
 	state->historyIndex++;
 

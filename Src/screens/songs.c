@@ -11,47 +11,42 @@
 #include "screens.h"
 #include "display.h"
 #include "components.h"
+#include "sdcard.h"
 
 #define ARRAY_LENGTH(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 void drawSongsScreen(State *state) {
-	ScrollableItem items[] = {
-			{
-				.name = "Guns N Roses - Don't Cry",
-				.screenTrigger = ARTISTS,
-			},
-			{	.name = "ACDC - Back in Black",
-				.screenTrigger = SONGS,
-			},
-	};
+    static char fileNames[100][64];
+    static uint32_t fileCount = 0;
 
-    memcpy(state->navigationHistory[state->historyIndex].items, items, sizeof(items));
+    if (fileCount == 0) {
+        listMp3Files(fileNames, &fileCount);
+    }
 
-    size_t len = ARRAY_LENGTH(items);
+    state->navigationHistory[state->historyIndex].scrollableItemCount = fileCount;
 
-	state->navigationHistory[state->historyIndex].scrollableItemCount = len;
+    for (int i = 0; i < fileCount && i < 100; i++) {
+        strncpy(state->navigationHistory[state->historyIndex].items[i].name,
+                fileNames[i], 63);
+    }
 
-	clearFrameBuffer();
+    clearFrameBuffer();
 
-	for (int i = 0; i < len; i++) {
-		if (i == state->navigationHistory[state->historyIndex].cursorIndex) {
-    		uint8_t row = i * 8 + 8;
+    for (int i = 0; i < 7; i++) {
+        if (i == state->navigationHistory[state->historyIndex].cursorIndex) {
+            uint8_t row = i * 8 + 8;
+            drawPixel(row + 3, 0);
+            drawPixel(row + 4, 0);
+            drawPixel(row + 3, 1);
+            drawPixel(row + 4, 1);
+            drawPixel(row + 5, 0);
+            drawPixel(row + 5, 1);
+        }
 
-			drawPixel(row + 3, 0);
-			drawPixel(row + 4, 0);
-			drawPixel(row + 3, 1);
-			drawPixel(row + 4, 1);
-			drawPixel(row + 5, 0);
-			drawPixel(row + 5, 1);
-		}
+        uint8_t strRow = i + 1;
+        drawString(strRow, 4, fileNames[i]);
+    }
 
-    	uint8_t strRow = i + 1;
-
-		drawString(strRow, 4, items[i].name);
-//		drawString(strRow, 118, ">");
-	}
-
-	renderHeaderInverse("Songs");
-
-	drawFrame();
+    renderHeaderInverse("Songs");
+    drawFrame();
 }

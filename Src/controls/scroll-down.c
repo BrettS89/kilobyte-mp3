@@ -36,6 +36,7 @@ void scrollDownInputHandler(State *state) {
 }
 
 static void homeScreenScrollDownInputHandler(State *state) {
+	printf("Scroll down pressed on home screen\r\n");
 	uint32_t scrollableItemCount = state->navigationHistory[state->historyIndex].scrollableItemCount;
 
 	if (state->navigationHistory[state->historyIndex].cursorIndex + 1 == scrollableItemCount) {
@@ -48,6 +49,7 @@ static void homeScreenScrollDownInputHandler(State *state) {
 }
 
 static void musicScreenScrollDownInputHandler(State *state) {
+	printf("Scroll down pressed on music screen\r\n");
 	uint32_t scrollableItemCount = state->navigationHistory[state->historyIndex].scrollableItemCount;
 
 	if (state->navigationHistory[state->historyIndex].cursorIndex + 1 == scrollableItemCount) {
@@ -60,7 +62,15 @@ static void musicScreenScrollDownInputHandler(State *state) {
 }
 
 static void songsScreenScrollDownInputHandler(State *state) {
-	printf("scroll down button pressed in songs screen\r\n");
+	uint32_t scrollableItemCount = state->navigationHistory[state->historyIndex].scrollableItemCount;
+
+	if (state->navigationHistory[state->historyIndex].cursorIndex + 1 == scrollableItemCount) {
+		return;
+	}
+
+	state->navigationHistory[state->historyIndex].cursorIndex++;
+
+	drawScreen(state);
 }
 
 static void playerScreenScrollDownInputHandler(State *state) {
