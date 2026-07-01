@@ -53,7 +53,7 @@ void drawHomeScreen(State *state) {
     	drawString(strRow, 118, ">");
     }
 
-    renderHeaderInverse("kilobyte");
+    renderHeaderInverse("kilobyte", state);
 
     drawFrame();
 }

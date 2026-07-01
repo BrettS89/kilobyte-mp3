@@ -7,8 +7,10 @@
 
 
 #include <stdio.h>
+#include <stdbool.h>
 #include "state.h"
 #include "controls.h"
+#include "screens.h"
 
 static void homeScreenPlayPauseInputHandler(State *state);
 static void musicScreenPlayPauseInputHandler(State *state);
@@ -35,17 +37,49 @@ void playPauseInputHandler(State *state) {
 }
 
 static void homeScreenPlayPauseInputHandler(State *state) {
-	printf("play/pause button pressed in home screen\r\n");
+	if (state->player.filename[0]) {
+		if (state->player.isPlaying) {
+			state->player.isPlaying = false;
+		}	else {
+			state->player.isPlaying = true;
+		}
+
+		drawScreen(state);
+	}
 }
 
 static void musicScreenPlayPauseInputHandler(State *state) {
-	printf("play/pause button pressed in music screen\r\n");
+	if (state->player.filename[0]) {
+		if (state->player.isPlaying) {
+			state->player.isPlaying = false;
+		}	else {
+			state->player.isPlaying = true;
+		}
+
+		drawScreen(state);
+	}
 }
 
 static void songsScreenPlayPauseInputHandler(State *state) {
-	printf("play/pause button pressed in songs screen\r\n");
+	if (state->player.filename[0]) {
+		if (state->player.isPlaying) {
+			state->player.isPlaying = false;
+		}	else {
+			state->player.isPlaying = true;
+		}
+
+		drawScreen(state);
+	}
 }
 
 static void playerScreenPlayPauseInputHandler(State *state) {
-	printf("play/pause button pressed in player screen\r\n");
+	if (state->player.filename[0]) {
+		if (state->player.isPlaying) {
+			state->player.isPlaying = false;
+		}	else {
+			state->player.isPlaying = true;
+		}
+
+		drawScreen(state);
+	}
 }

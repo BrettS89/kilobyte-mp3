@@ -41,6 +41,7 @@ typedef struct {
 	char artist[64];
 	char album[64];
 	char song[256];
+	char filename[256];
 	uint32_t duration;
 	uint32_t position;
 	bool isPlaying;

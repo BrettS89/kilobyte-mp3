@@ -12,7 +12,7 @@
 void drawArtistsScreen(State *state) {
 	clearFrameBuffer();
 
-	renderHeaderInverse("Artists");
+	renderHeaderInverse("Artists", state);
 
 	drawString(1, 0, "Coming soon");
 

@@ -8,6 +8,8 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
+#include <stdint.h>
+
 extern uint8_t frameBuffer[8][128];
 
 void oledInit(void);
@@ -20,5 +22,7 @@ void fontInit(void);
 void drawFrame();
 void clearFrameBuffer(void);
 void drawPixel(uint8_t y, uint8_t x);
+void drawRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
+void fillRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
 
 #endif /* DISPLAY_H_ */

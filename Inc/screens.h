@@ -18,5 +18,6 @@ void drawHomeScreen(State *state);
 void drawMusicScreen(State *state);
 void drawRadioScreen(State *state);
 void drawSongsScreen(State *state);
+void drawPlayerScreen(State *state);
 
 #endif /* SCREENS_H_ */

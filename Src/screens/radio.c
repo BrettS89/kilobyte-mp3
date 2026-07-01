@@ -12,7 +12,7 @@
 void drawRadioScreen(State *state) {
 	clearFrameBuffer();
 
-	renderHeaderInverse("Radio");
+	renderHeaderInverse("Radio", state);
 
 	drawString(1, 0, "Coming soon");
 

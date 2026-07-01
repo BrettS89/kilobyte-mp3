@@ -49,7 +49,6 @@ void spi1Init(void) {
     SPI1->CR1 |= (1U << 9);   // SSM software slave management
     SPI1->CR1 |= (1U << 8);   // SSI internal slave select
     SPI1->CR1 |= (1U << 6);   // SPE - enable SPI1
-
 }
 
 uint8_t spi1Transfer(uint8_t data) {

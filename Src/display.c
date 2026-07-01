@@ -193,6 +193,31 @@ void drawString(uint8_t row, uint8_t col, const char *str) {
     }
 }
 
+void drawHLine(uint8_t x, uint8_t y, uint8_t width) {
+    for (uint8_t i = 0; i < width; i++) {
+        drawPixel(y, x + i);
+    }
+}
+
+void drawVLine(uint8_t x, uint8_t y, uint8_t height) {
+    for (uint8_t i = 0; i < height; i++) {
+        drawPixel(y + i, x);
+    }
+}
+
+void drawRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+    drawHLine(x, y, width);                  // top
+    drawHLine(x, y + height - 1, width);     // bottom
+    drawVLine(x, y, height);                 // left
+    drawVLine(x + width - 1, y, height);     // right
+}
+
+void fillRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+    for (uint8_t row = 0; row < height; row++) {
+        drawHLine(x, y + row, width);
+    }
+}
+
 void oledClear(void) {
     for (uint8_t page = 0; page < 8; page++) {
         oledSetCursor(page, 0);

@@ -47,6 +47,7 @@ void drawSongsScreen(State *state) {
         drawString(strRow, 4, fileNames[i]);
     }
 
-    renderHeaderInverse("Songs");
+    renderHeaderInverse("Songs", state);
+
     drawFrame();
 }

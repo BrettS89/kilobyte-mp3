@@ -15,5 +15,6 @@ uint8_t sdReadBlock(uint32_t blockAddr, uint8_t *buffer);
 uint8_t sdWriteBlock(uint32_t blockAddr, const uint8_t *buffer);
 int shouldSkipAudioFile(const char *name);
 void listMp3Files(char filenames[][64], uint32_t *count);
+uint32_t getMp3Duration(const char *filename);
 
 #endif /* SDCARD_H_ */

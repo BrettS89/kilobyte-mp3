@@ -52,10 +52,9 @@ static void musicScreenMenuInputHandler(State *state) {
 }
 
 static void songsScreenMenuInputHandler(State *state) {
-	printf("menu button pressed\r\n");
 	onBack(state);
 }
 
 static void playerScreenMenuInputHandler(State *state) {
-	printf("menu button pressed in player screen\r\n");
+	onBack(state);
 }

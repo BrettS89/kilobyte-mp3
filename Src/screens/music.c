@@ -51,7 +51,7 @@ void drawMusicScreen(State *state) {
 		drawString(strRow, 118, ">");
 	}
 
-	renderHeaderInverse("Music");
+	renderHeaderInverse("Music", state);
 
 	drawFrame();
 }

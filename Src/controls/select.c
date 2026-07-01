@@ -7,9 +7,13 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
 #include "state.h"
 #include "controls.h"
 #include "screens.h"
+#include "sdcard.h"
+#include "audio.h"
 
 static void homeScreenSelectInputHandler(State *state);
 static void musicScreenSelectInputHandler(State *state);
@@ -52,7 +56,21 @@ static void musicScreenSelectInputHandler(State *state) {
 }
 
 static void songsScreenSelectInputHandler(State *state) {
-	printf("select button pressed in songs screen \r\n");
+	uint32_t cursorIndex = state->navigationHistory[state->historyIndex].cursorIndex;
+
+	ScrollableItem item = state->navigationHistory[state->historyIndex].items[cursorIndex];
+
+	strncpy(state->player.filename, item.name, sizeof(state->player.filename) - 1);
+
+	state->player.filename[sizeof(state->player.filename) - 1] = '\0';
+
+	state->player.isPlaying = true;
+
+	state->player.duration = getMp3Duration(state->player.filename);
+
+//	vs1053PlayFile(state->player.filename);
+
+	navigate(state, PLAYER);
 }
 
 static void playerScreenSelectInputHandler(State *state) {

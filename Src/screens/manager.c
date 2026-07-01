@@ -27,6 +27,10 @@ void drawScreen(State *state) {
 			drawRadioScreen(state);
 			break;
 
+		case PLAYER:
+			drawPlayerScreen(state);
+			break;
+
 		default:
 			break;
 	}

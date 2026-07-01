@@ -10,26 +10,25 @@
 #include "font.h"
 #include "spi1.h"
 #include "ff.h"
+#include "audio.h"
 
 
 int main() {
 	uartTxinit();
-
 	spi1Init();
 
 	FATFS fs;
 	FRESULT res = f_mount(&fs, "", 1);
 
 	fontInit();
-
     oledInit();
-
     oledClear();
+
+//    audioInit();
 
     __disable_irq();
     controlsInit();
     __enable_irq();
-
 
     navigate(&state, HOME);
 
@@ -39,8 +38,7 @@ int main() {
 		printf("Mount failed: %d\r\n", res);
 	}
 
-    while(1) {
-    }
+    while(1) {}
 
     return 0;
 }
