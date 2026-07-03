@@ -55,5 +55,5 @@ void drawHomeScreen(State *state) {
 
     renderHeaderInverse("kilobyte", state);
 
-    drawFrame();
+    setFrameBufferUpdated();
 }

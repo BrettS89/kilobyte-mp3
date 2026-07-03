@@ -19,6 +19,7 @@ void drawStringShifted(uint8_t row, uint8_t col, const char *str, uint8_t shiftU
 void drawStringShiftedInverse(uint8_t row, uint8_t col, const char *str, uint8_t shiftUp);
 void drawString(uint8_t page, uint8_t col, const char *str);
 void fontInit(void);
+void setFrameBufferUpdated();
 void drawFrame();
 void clearFrameBuffer(void);
 void drawPixel(uint8_t y, uint8_t x);

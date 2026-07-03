@@ -11,11 +11,13 @@
 #include "spi1.h"
 #include "ff.h"
 #include "audio.h"
+#include "systick.h"
 
 
 int main() {
 	uartTxinit();
 	spi1Init();
+	systickInit();
 
 	FATFS fs;
 	FRESULT res = f_mount(&fs, "", 1);
@@ -24,7 +26,11 @@ int main() {
     oledInit();
     oledClear();
 
-//    audioInit();
+    printf("initializing audio\r\n");
+
+    audioInit();
+
+    printf("audio initialized\r\n");
 
     __disable_irq();
     controlsInit();
@@ -38,7 +44,28 @@ int main() {
 		printf("Mount failed: %d\r\n", res);
 	}
 
-    while(1) {}
+    static uint32_t lastPositionUpdate = 0;
+
+    while(1) {
+    	audioProcess();
+
+    	if (msTicks - lastPositionUpdate >= 50) {
+			lastPositionUpdate = msTicks;
+
+			if (state.player.isPlaying) {
+				uint32_t position = audioGetPosition();
+
+				printf("position: %d\r\n", (int)position);
+
+				if (position != state.player.position) {
+					state.player.position = position;
+					drawScreen(&state);
+				}
+			}
+
+			drawFrame();
+		}
+    }
 
     return 0;
 }

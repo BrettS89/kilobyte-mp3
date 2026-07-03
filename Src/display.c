@@ -12,12 +12,15 @@
 
 #include "stm32f4xx.h"
 #include <string.h>
+#include <stdbool.h>
 #include "font.h"
 
 void i2cSendData(uint8_t data);
 void oledSetCursor(uint8_t page, uint8_t col);
 
 uint8_t frameBuffer[8][128];
+
+bool frameBufferUpdated = false;
 
 void i2cInit() {
 	// enable clock access for gpiob
@@ -245,7 +248,13 @@ void oledInit(void) {
     oledSendCommand(0xAF);  // display on
 }
 
+void setFrameBufferUpdated() {
+	frameBufferUpdated = true;
+}
+
 void drawFrame() {
+	if (!frameBufferUpdated) return;
+
 	oledSetCursor(0, 0);
 
     i2cStart();
@@ -259,6 +268,8 @@ void drawFrame() {
 	}
 
     i2cStop();
+
+    frameBufferUpdated = false;
 }
 
 void clearFrameBuffer(void) {

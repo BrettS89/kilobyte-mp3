@@ -8,7 +8,11 @@
 #ifndef SYSTICK_H_
 #define SYSTICK_H_
 
-void systickDelayMs(int);
+#include <stdint.h>
 
+extern volatile uint32_t msTicks;
+
+void systickDelayMs(int);
+void systickInit(void);
 
 #endif /* SYSTICK_H_ */

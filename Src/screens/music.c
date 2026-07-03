@@ -53,5 +53,5 @@ void drawMusicScreen(State *state) {
 
 	renderHeaderInverse("Music", state);
 
-	drawFrame();
+	setFrameBufferUpdated();
 }

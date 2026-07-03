@@ -68,9 +68,13 @@ static void songsScreenSelectInputHandler(State *state) {
 
 	state->player.duration = getMp3Duration(state->player.filename);
 
-//	vs1053PlayFile(state->player.filename);
+	state->player.position = 0;
 
 	navigate(state, PLAYER);
+
+	audioStop();
+
+	audioPlayFile(state->player.filename);
 }
 
 static void playerScreenSelectInputHandler(State *state) {

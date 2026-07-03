@@ -10,12 +10,15 @@
  *      	PB15 MOSI
  *      	PB1  CS
  *      	PB2	 XDCS
- *      	PB11 DREQ
+ *      	PA11 DREQ
  *      	PB12 RST
  */
 
-
+#include <stdio.h>
+#include <stdint.h>
+#include "stm32f4xx.h"
 #include "audio.h"
+#include "ff.h"
 
 void spi2Init(void) {
     // enable clocks
@@ -45,7 +48,7 @@ void spi2Init(void) {
 }
 
 void vs1053CsInit(void) {
-    RCC->AHB1ENR |= (1U << 1);
+    RCC->AHB1ENR |= (1U << 0) | (1U << 1);  // GPIOA and GPIOB
 
     // PB1 as output (CS)
     GPIOB->MODER &= ~(3U << 2);
@@ -55,17 +58,24 @@ void vs1053CsInit(void) {
     GPIOB->MODER &= ~(3U << 4);
     GPIOB->MODER |=  (1U << 4);
 
-    // PB11 as input (DREQ)
-    GPIOB->MODER &= ~(3U << 22);
+    // PA11 as input (DREQ)
+    GPIOA->MODER &= ~(3U << 22);
 
     // PB12 as output (RST)
     GPIOB->MODER &= ~(3U << 24);
     GPIOB->MODER |=  (1U << 24);
 
-    // idle states — set once
+    // idle states
     GPIOB->BSRR = (1U << 1);   // CS high
     GPIOB->BSRR = (1U << 2);   // XDCS high
     GPIOB->BSRR = (1U << 12);  // RST high (not in reset)
+}
+
+uint8_t spi2Transfer(uint8_t data) {
+    while (!(SPI2->SR & (1U << 1)));  // wait for TXE
+    *(volatile uint8_t*)&SPI2->DR = data;
+    while (!(SPI2->SR & (1U << 0)));  // wait for RXNE
+    return *(volatile uint8_t*)&SPI2->DR;
 }
 
 void vs1053Reset(void) {
@@ -76,7 +86,7 @@ void vs1053Reset(void) {
 }
 
 void vs1053WaitForDREQ(void) {
-    while (!(GPIOB->IDR & (1U << 11)));  // wait until DREQ goes high
+    while (!(GPIOA->IDR & (1U << 11)));  // wait until DREQ goes high
 }
 
 void vs1053WriteRegister(uint8_t address, uint16_t data) {
@@ -110,9 +120,12 @@ uint16_t vs1053ReadRegister(uint8_t address) {
 void vs1053SendData(uint8_t *data, uint16_t length) {
     GPIOB->BSRR = (1U << (2 + 16));  // XDCS low
 
-    for (uint16_t i = 0; i < length; i++) {
-        vs1053WaitForDREQ();
-        spi2Transfer(data[i]);
+    uint16_t i = 0;
+    while (i < length) {
+        if (GPIOA->IDR & (1U << 11)) {  // DREQ high, ready
+            spi2Transfer(data[i]);
+            i++;
+        }
     }
 
     GPIOB->BSRR = (1U << 2);         // XDCS high
@@ -121,29 +134,41 @@ void vs1053SendData(uint8_t *data, uint16_t length) {
 void vs1053InitChip(void) {
     vs1053Reset();
 
-    // set MP3 mode explicitly (fixes the floating pin issue)
-    vs1053WriteRegister(0x00, 0x0800 | 0x0004);  // SCI_MODE: SM_SDINEW | SM_RESET
+    // fix floating GPIO1 causing real-time MIDI mode
+    vs1053WriteRegister(0x07, 0xC017);  // WRAMADDR = GPIO DDR
+    vs1053WriteRegister(0x06, 0x0003);  // WRAM = GPIO0, GPIO1 as outputs
+    vs1053WriteRegister(0x07, 0xC019);  // WRAMADDR = GPIO ODATA
+    vs1053WriteRegister(0x06, 0x0000);  // WRAM = GPIO0, GPIO1 low
 
+    // software reset to reboot into normal decode mode
+    vs1053WriteRegister(0x00, 0x0804);  // SM_SDINEW | SM_RESET
+    for (volatile int i = 0; i < 500000; i++);
+
+    vs1053WaitForDREQ();
+
+    // set volume (0x00 = loudest, 0xFE = quietest per channel)
+    vs1053WriteRegister(0x0B, 0x0000);
+
+    // set clock multiplier - required for real time decoding
+    vs1053WriteRegister(0x03, 0x9800);
     for (volatile int i = 0; i < 100000; i++);
-
-    // set initial volume (0x00 = loudest, 0xFE = quietest per channel)
-    vs1053WriteRegister(0x0B, 0x2020);  // SCI_VOL, moderate volume both channels
 
     // increase SPI2 speed now that init is done
     SPI2->CR1 &= ~(1U << 6);
     SPI2->CR1 &= ~(7U << 3);
-    SPI2->CR1 |= (2U << 3);  // faster prescaler for streaming
+    SPI2->CR1 |= (1U << 3);  // prescaler /4
     SPI2->CR1 |= (1U << 6);
 }
 
-void audioInit() {
-	spi2Init();
-	vs1053CsInit();
+void audioInit(void) {
+    spi2Init();
+    vs1053CsInit();
+    vs1053InitChip();
 }
 
 void vs1053PlayFile(const char *filename) {
     FIL file;
-    uint8_t buffer[32];
+    uint8_t buffer[512];
     UINT bytesRead;
 
     if (f_open(&file, filename, FA_READ) != FR_OK) {
@@ -152,7 +177,7 @@ void vs1053PlayFile(const char *filename) {
     }
 
     while (1) {
-        f_read(&file, buffer, 32, &bytesRead);
+        f_read(&file, buffer, sizeof(buffer), &bytesRead);
         if (bytesRead == 0) break;
 
         vs1053SendData(buffer, bytesRead);
@@ -160,4 +185,3 @@ void vs1053PlayFile(const char *filename) {
 
     f_close(&file);
 }
-

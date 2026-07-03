@@ -13,6 +13,8 @@
 #include "state.h"
 
 void renderPlayerProgressBar(State *state, uint8_t row) {
+	printf("pos: %d\r\n", (int)state->player.position);
+
     // bar dimensions
     uint8_t barWidth = 110;
     uint8_t barHeight = 6;

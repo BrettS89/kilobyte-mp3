@@ -16,5 +16,5 @@ void drawRadioScreen(State *state) {
 
 	drawString(1, 0, "Coming soon");
 
-	drawFrame();
+	setFrameBufferUpdated();
 }

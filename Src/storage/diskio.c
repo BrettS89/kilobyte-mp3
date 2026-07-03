@@ -25,7 +25,7 @@ DSTATUS disk_status(BYTE pdrv) {
 }
 
 DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
-	printf("disk_read called: sector %lu count %u\r\n", sector, count);
+//	printf("disk_read called: sector %lu count %u\r\n", sector, count);
     for (UINT i = 0; i < count; i++) {
         if (!sdReadBlock(sector + i, buff + (i * 512))) {
             return RES_ERROR;

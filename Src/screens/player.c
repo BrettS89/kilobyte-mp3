@@ -22,5 +22,5 @@ void drawPlayerScreen(State *state) {
 
     renderPlayerProgressBar(state, 6);
 
-    drawFrame();
+    setFrameBufferUpdated();
 }

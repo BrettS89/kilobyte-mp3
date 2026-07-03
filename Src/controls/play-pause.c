@@ -11,6 +11,7 @@
 #include "state.h"
 #include "controls.h"
 #include "screens.h"
+#include "audio.h"
 
 static void homeScreenPlayPauseInputHandler(State *state);
 static void musicScreenPlayPauseInputHandler(State *state);
@@ -44,6 +45,8 @@ static void homeScreenPlayPauseInputHandler(State *state) {
 			state->player.isPlaying = true;
 		}
 
+		audioSetPlaying(state->player.isPlaying);
+
 		drawScreen(state);
 	}
 }
@@ -55,6 +58,8 @@ static void musicScreenPlayPauseInputHandler(State *state) {
 		}	else {
 			state->player.isPlaying = true;
 		}
+
+		audioSetPlaying(state->player.isPlaying);
 
 		drawScreen(state);
 	}
@@ -68,6 +73,8 @@ static void songsScreenPlayPauseInputHandler(State *state) {
 			state->player.isPlaying = true;
 		}
 
+		audioSetPlaying(state->player.isPlaying);
+
 		drawScreen(state);
 	}
 }
@@ -79,6 +86,8 @@ static void playerScreenPlayPauseInputHandler(State *state) {
 		}	else {
 			state->player.isPlaying = true;
 		}
+
+		audioSetPlaying(state->player.isPlaying);
 
 		drawScreen(state);
 	}

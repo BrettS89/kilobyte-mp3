@@ -8,7 +8,19 @@
 #ifndef AUDIO_H_
 #define AUDIO_H_
 
+#include <stdbool.h>
+#include <stdint.h>
+
 void audioInit();
 void vs1053PlayFile(const char *filename);
+void vs1053SendData(uint8_t *data, uint16_t length);
+uint16_t vs1053ReadRegister(uint8_t address);
+void vs1053WriteRegister(uint8_t address, uint16_t data);
+void audioPlayFile(const char *filename);
+void audioSetPlaying(bool playing);
+bool audioIsPlaying(void);
+void audioProcess(void);
+void audioStop(void);
+uint32_t audioGetPosition(void);
 
 #endif /* AUDIO_H_ */
