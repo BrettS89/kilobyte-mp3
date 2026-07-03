@@ -56,25 +56,19 @@ static void musicScreenSelectInputHandler(State *state) {
 }
 
 static void songsScreenSelectInputHandler(State *state) {
-	uint32_t cursorIndex = state->navigationHistory[state->historyIndex].cursorIndex;
+    uint32_t cursorIndex = state->navigationHistory[state->historyIndex].cursorIndex;
+    ScrollableItem item = state->navigationHistory[state->historyIndex].items[cursorIndex];
 
-	ScrollableItem item = state->navigationHistory[state->historyIndex].items[cursorIndex];
+    strncpy(state->player.filename, item.name, sizeof(state->player.filename) - 1);
+    state->player.filename[sizeof(state->player.filename) - 1] = '\0';
 
-	strncpy(state->player.filename, item.name, sizeof(state->player.filename) - 1);
+    state->player.isPlaying = true;
+    state->player.position = 0;
+    state->player.duration = 0;
 
-	state->player.filename[sizeof(state->player.filename) - 1] = '\0';
+    navigate(state, PLAYER);
 
-	state->player.isPlaying = true;
-
-	state->player.duration = getMp3Duration(state->player.filename);
-
-	state->player.position = 0;
-
-	navigate(state, PLAYER);
-
-	audioStop();
-
-	audioPlayFile(state->player.filename);
+    audioRequestPlayFile(state->player.filename);
 }
 
 static void playerScreenSelectInputHandler(State *state) {

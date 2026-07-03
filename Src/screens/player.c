@@ -7,6 +7,7 @@
 
 
 #include <string.h>
+#include <stdio.h>
 #include "state.h"
 #include "screens.h"
 #include "display.h"
@@ -14,6 +15,8 @@
 #include "sdcard.h"
 
 void drawPlayerScreen(State *state) {
+    printf("position: %d\r\n", (int)state->player.position);
+
     clearFrameBuffer();
 
     renderHeaderInverse("Now Playing", state);

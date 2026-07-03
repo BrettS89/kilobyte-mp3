@@ -49,22 +49,31 @@ int main() {
     while(1) {
     	audioProcess();
 
-    	if (msTicks - lastPositionUpdate >= 50) {
-			lastPositionUpdate = msTicks;
+    	if (msTicks - lastPositionUpdate >= 100) {
+    	    lastPositionUpdate = msTicks;
 
-			if (state.player.isPlaying) {
-				uint32_t position = audioGetPosition();
+    	    if (audioIsDurationReady()) {
+    	        state.player.duration = audioGetPendingDuration();
+    	        drawScreen(&state);
+    	    }
 
-				printf("position: %d\r\n", (int)position);
+    	    if (state.player.isPlaying) {
+    	        uint32_t position = audioGetPosition();
 
-				if (position != state.player.position) {
-					state.player.position = position;
-					drawScreen(&state);
-				}
-			}
+//    	        printf("position: %d\r\n", (int)position);
 
-			drawFrame();
-		}
+    	        if (position != state.player.position) {
+    	            state.player.position = position;
+//    	            renderPlayerProgressBar(&state, /* your row */);
+    	            if (state.navigationHistory[state.historyIndex].name == PLAYER) {
+    	            	drawScreen(&state);
+    	            }
+//    	            setFrameBufferUpdated();
+    	        }
+    	    }
+
+    	    drawFrame();
+    	}
     }
 
     return 0;

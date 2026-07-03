@@ -22,5 +22,8 @@ bool audioIsPlaying(void);
 void audioProcess(void);
 void audioStop(void);
 uint32_t audioGetPosition(void);
+uint32_t audioGetPendingDuration(void);
+bool audioIsDurationReady(void);
+void audioRequestPlayFile(const char *filename);
 
 #endif /* AUDIO_H_ */

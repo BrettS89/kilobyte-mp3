@@ -11,6 +11,7 @@
 #include <string.h>
 #include "audio.h"
 #include "ff.h"
+#include "sdcard.h"
 
 typedef struct {
     FIL file;
@@ -19,6 +20,27 @@ typedef struct {
 } AudioStream;
 
 static AudioStream audioStream = {0};
+
+static volatile bool songChangeRequested = false;
+static char pendingFilename[256];
+
+static uint32_t pendingDuration = 0;
+static volatile bool durationReady = false;
+
+uint32_t audioGetPendingDuration(void) {
+    durationReady = false;
+    return pendingDuration;
+}
+
+bool audioIsDurationReady(void) {
+    return durationReady;
+}
+
+void audioRequestPlayFile(const char *filename) {
+    strncpy(pendingFilename, filename, sizeof(pendingFilename) - 1);
+    pendingFilename[sizeof(pendingFilename) - 1] = '\0';
+    songChangeRequested = true;
+}
 
 void audioPlayFile(const char *filename) {
 	audioStream.isPlaying = false;
@@ -40,8 +62,21 @@ void audioPlayFile(const char *filename) {
     audioStream.isPlaying = true;
 }
 
+static void vs1053CancelDecode(void) {
+    uint16_t mode = vs1053ReadRegister(0x00);
+    vs1053WriteRegister(0x00, mode | 0x0008);  // SM_CANCEL bit
+
+    uint32_t timeout = 10000;
+    while ((vs1053ReadRegister(0x00) & 0x0008) && --timeout);
+}
+
 void audioSetPlaying(bool playing) {
     if (!audioStream.isOpen) return;
+
+    if (!playing) {
+		vs1053CancelDecode();
+	}
+
     audioStream.isPlaying = playing;
 }
 
@@ -58,6 +93,32 @@ bool audioIsPlaying(void) {
 }
 
 void audioProcess(void) {
+    if (songChangeRequested) {
+        songChangeRequested = false;
+
+        audioStream.isPlaying = false;
+
+        vs1053CancelDecode();
+
+        if (audioStream.isOpen) {
+            f_close(&audioStream.file);
+            audioStream.isOpen = false;
+        }
+
+        vs1053WriteRegister(0x04, 0x0000);
+
+        pendingDuration = getMp3Duration(pendingFilename);
+
+        if (f_open(&audioStream.file, pendingFilename, FA_READ) == FR_OK) {
+            audioStream.isOpen = true;
+            audioStream.isPlaying = true;
+            durationReady = true;
+        } else {
+            printf("Failed to open file: %s\r\n", pendingFilename);
+        }
+        return;
+    }
+
     if (!audioStream.isPlaying || !audioStream.isOpen) return;
 
     uint8_t buffer[32];
