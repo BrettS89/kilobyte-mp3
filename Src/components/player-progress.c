@@ -13,8 +13,6 @@
 #include "state.h"
 
 void renderPlayerProgressBar(State *state, uint8_t row) {
-	printf("pos: %d\r\n", (int)state->player.position);
-
     // bar dimensions
     uint8_t barWidth = 110;
     uint8_t barHeight = 6;
@@ -36,8 +34,6 @@ void renderPlayerProgressBar(State *state, uint8_t row) {
     // format time strings
     char posStr[10];
     char durStr[10];
-
-    printf("duration: %d\r\n", (int)state->player.duration);
 
     uint32_t posMins = (state->player.position / 60) % 100;  // cap at 99
     uint32_t posSecs = state->player.position % 60;

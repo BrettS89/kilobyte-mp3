@@ -9,6 +9,7 @@
 #define DISPLAY_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 extern uint8_t frameBuffer[8][128];
 

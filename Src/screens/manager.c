@@ -71,4 +71,5 @@ void onBack(State *state) {
 	state->historyIndex--;
 
 	drawScreen(state);
+
 }

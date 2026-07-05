@@ -21,6 +21,7 @@ void oledSetCursor(uint8_t page, uint8_t col);
 void i2cStop(void);
 
 uint8_t frameBuffer[8][128];
+uint8_t dmaSendBuffer[8][128];
 
 bool frameBufferUpdated = false;
 
@@ -68,7 +69,6 @@ void DMA1_Stream6_IRQHandler(void) {
 	if (DMA1->HISR & (1U << 21)) {
 		DMA1->HIFCR |= (1U << 21);
 		i2cStop();
-		frameBufferUpdated = false;
 		dmaTransferInProgress = false;
 	}
 }
@@ -309,19 +309,19 @@ void drawFrame() {
     if (!frameBufferUpdated) return;
     if (dmaTransferInProgress) return;
 
+    frameBufferUpdated = false;
+
+    memcpy(dmaSendBuffer, frameBuffer, sizeof(dmaSendBuffer));
+
     dmaTransferInProgress = true;
 
     oledSetCursor(0, 0);
-
-    printf("in1\r\n");
 
     i2cStart();
     i2cSendAddress(0x3C);
     i2cSendData(0x40);
 
-    printf("in2\r\n");
-
-    dma1Stream6Start((uint32_t)frameBuffer, 1024);
+    dma1Stream6Start((uint32_t)dmaSendBuffer, 1024);
 }
 
 void clearFrameBuffer(void) {

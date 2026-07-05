@@ -63,11 +63,10 @@ int main() {
 
     	        if (position != state.player.position) {
     	            state.player.position = position;
-//    	            renderPlayerProgressBar(&state, /* your row */);
+
     	            if (state.navigationHistory[state.historyIndex].name == PLAYER) {
     	            	drawScreen(&state);
     	            }
-//    	            setFrameBufferUpdated();
     	        }
     	    }
 
