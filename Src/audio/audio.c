@@ -43,32 +43,54 @@ void audioRequestPlayFile(const char *filename) {
     songChangeRequested = true;
 }
 
-void audioPlayFile(const char *filename) {
-	audioStream.isPlaying = false;
+//void audioPlayFile(const char *filename) {
+//	audioStream.isPlaying = false;
+//
+//    if (audioStream.isOpen) {
+//        f_close(&audioStream.file);
+//        audioStream.isOpen = false;
+//    }
+//
+//    vs1053WriteRegister(0x04, 0x0000);
+//
+//    if (f_open(&audioStream.file, filename, FA_READ) != FR_OK) {
+//        printf("Failed to open file: %s\r\n", filename);
+//        audioStream.isPlaying = false;
+//        return;
+//    }
+//
+//    audioStream.isOpen = true;
+//    audioStream.isPlaying = true;
+//}
 
-    if (audioStream.isOpen) {
-        f_close(&audioStream.file);
-        audioStream.isOpen = false;
-    }
-
-    vs1053WriteRegister(0x04, 0x0000);
-
-    if (f_open(&audioStream.file, filename, FA_READ) != FR_OK) {
-        printf("Failed to open file: %s\r\n", filename);
-        audioStream.isPlaying = false;
-        return;
-    }
-
-    audioStream.isOpen = true;
-    audioStream.isPlaying = true;
+static uint8_t vs1053ReadEndFillByte(void) {
+    vs1053WriteRegister(0x07, 0x1E06);            // SCI_WRAMADDR -> endFillByte param
+    return (uint8_t)(vs1053ReadRegister(0x06) & 0xFF);  // SCI_WRAM low byte
 }
 
 static void vs1053CancelDecode(void) {
-    uint16_t mode = vs1053ReadRegister(0x00);
-    vs1053WriteRegister(0x00, mode | 0x0008);  // SM_CANCEL bit
+    uint8_t efb = vs1053ReadEndFillByte();
+    uint8_t fill[32];
+    memset(fill, efb, sizeof(fill));
 
-    uint32_t timeout = 10000;
-    while ((vs1053ReadRegister(0x00) & 0x0008) && --timeout);
+    uint16_t mode = vs1053ReadRegister(0x00);
+    vs1053WriteRegister(0x00, mode | 0x0008);     // SM_CANCEL
+
+    // Feed endFillByte and poll, up to 2048 bytes
+    bool cancelled = false;
+    for (int i = 0; i < 64; i++) {                // 64 * 32 = 2048
+        vs1053SendData(fill, sizeof(fill));
+        if ((vs1053ReadRegister(0x00) & 0x0008) == 0) { cancelled = true; break; }
+    }
+
+    if (!cancelled) {
+        // Decoder wedged — nuclear option, soft reset
+        vs1053WriteRegister(0x00, vs1053ReadRegister(0x00) | 0x0004);  // SM_RESET
+        // NOTE: after reset you must re-apply SCI_CLOCKF, SCI_VOL, etc.
+    }
+
+    // Drain the last partial frame
+    for (int i = 0; i < 65; i++) vs1053SendData(fill, sizeof(fill));  // ~2080 >= 2052
 }
 
 void audioSetPlaying(bool playing) {
@@ -89,36 +111,53 @@ bool audioIsPlaying(void) {
 }
 
 void audioProcess(void) {
-	if (songChangeRequested) {
-	    songChangeRequested = false;
+    if (songChangeRequested) {
+        songChangeRequested = false;
 
-	    bool isDifferentFile = (strcmp(audioStream.currentFilename, pendingFilename) != 0);
+        bool isDifferentFile = (strcmp(audioStream.currentFilename, pendingFilename) != 0);
 
-	    audioStream.isPlaying = false;
+        audioStream.isPlaying = false;
 
-	    if (isDifferentFile) {
-	        vs1053CancelDecode();
-	    }
+        uint16_t savedVol = vs1053ReadRegister(0x0B);      // SCI_VOL
+        vs1053WriteRegister(0x0B, 0xFEFE);                 // mute across the transition
 
-	    if (audioStream.isOpen) {
-	        f_close(&audioStream.file);
-	        audioStream.isOpen = false;
-	    }
+        if (isDifferentFile) {
+            vs1053CancelDecode();                          // feeds endFillByte + flushes >=2052
+        }
 
-	    vs1053WriteRegister(0x04, 0x0000);
+        if (audioStream.isOpen) {
+            f_close(&audioStream.file);
+            audioStream.isOpen = false;
+        }
 
-	    pendingDuration = getMp3Duration(pendingFilename);
+        vs1053WriteRegister(0x04, 0x0000);                 // clear SCI_DECODE_TIME
+        vs1053WriteRegister(0x04, 0x0000);                 // write twice to win the once/sec update race
 
-	    if (f_open(&audioStream.file, pendingFilename, FA_READ) == FR_OK) {
-	        strncpy(audioStream.currentFilename, pendingFilename, sizeof(audioStream.currentFilename) - 1);
-	        audioStream.isOpen = true;
-	        audioStream.isPlaying = true;
-	        durationReady = true;
-	    } else {
-	        printf("Failed to open file: %s\r\n", pendingFilename);
-	    }
-	    return;
-	}
+        pendingDuration = getMp3Duration(pendingFilename);
+
+        if (f_open(&audioStream.file, pendingFilename, FA_READ) == FR_OK) {
+            strncpy(audioStream.currentFilename, pendingFilename, sizeof(audioStream.currentFilename) - 1);
+            audioStream.currentFilename[sizeof(audioStream.currentFilename) - 1] = '\0';
+            audioStream.isOpen = true;
+            audioStream.isPlaying = true;
+            durationReady = true;
+
+            // Prime the FIFO before unmuting so the decoder doesn't start on an empty buffer
+            uint8_t primeBuf[32];
+            UINT primeRead;
+            for (int i = 0; i < 64; i++) {                 // ~2KB, fills the input FIFO
+                if (f_read(&audioStream.file, primeBuf, sizeof(primeBuf), &primeRead) != FR_OK || primeRead == 0) {
+                    break;
+                }
+                vs1053SendData(primeBuf, primeRead);
+            }
+        } else {
+            printf("Failed to open file: %s\r\n", pendingFilename);
+        }
+
+        vs1053WriteRegister(0x0B, savedVol);               // restore volume
+        return;
+    }
 
     if (!audioStream.isPlaying || !audioStream.isOpen) return;
 
