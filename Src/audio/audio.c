@@ -17,6 +17,7 @@ typedef struct {
     FIL file;
     bool isOpen;
     bool isPlaying;
+    char currentFilename[256];
 } AudioStream;
 
 static AudioStream audioStream = {0};
@@ -72,11 +73,6 @@ static void vs1053CancelDecode(void) {
 
 void audioSetPlaying(bool playing) {
     if (!audioStream.isOpen) return;
-
-    if (!playing) {
-		vs1053CancelDecode();
-	}
-
     audioStream.isPlaying = playing;
 }
 
@@ -93,31 +89,36 @@ bool audioIsPlaying(void) {
 }
 
 void audioProcess(void) {
-    if (songChangeRequested) {
-        songChangeRequested = false;
+	if (songChangeRequested) {
+	    songChangeRequested = false;
 
-        audioStream.isPlaying = false;
+	    bool isDifferentFile = (strcmp(audioStream.currentFilename, pendingFilename) != 0);
 
-        vs1053CancelDecode();
+	    audioStream.isPlaying = false;
 
-        if (audioStream.isOpen) {
-            f_close(&audioStream.file);
-            audioStream.isOpen = false;
-        }
+	    if (isDifferentFile) {
+	        vs1053CancelDecode();
+	    }
 
-        vs1053WriteRegister(0x04, 0x0000);
+	    if (audioStream.isOpen) {
+	        f_close(&audioStream.file);
+	        audioStream.isOpen = false;
+	    }
 
-        pendingDuration = getMp3Duration(pendingFilename);
+	    vs1053WriteRegister(0x04, 0x0000);
 
-        if (f_open(&audioStream.file, pendingFilename, FA_READ) == FR_OK) {
-            audioStream.isOpen = true;
-            audioStream.isPlaying = true;
-            durationReady = true;
-        } else {
-            printf("Failed to open file: %s\r\n", pendingFilename);
-        }
-        return;
-    }
+	    pendingDuration = getMp3Duration(pendingFilename);
+
+	    if (f_open(&audioStream.file, pendingFilename, FA_READ) == FR_OK) {
+	        strncpy(audioStream.currentFilename, pendingFilename, sizeof(audioStream.currentFilename) - 1);
+	        audioStream.isOpen = true;
+	        audioStream.isPlaying = true;
+	        durationReady = true;
+	    } else {
+	        printf("Failed to open file: %s\r\n", pendingFilename);
+	    }
+	    return;
+	}
 
     if (!audioStream.isPlaying || !audioStream.isOpen) return;
 

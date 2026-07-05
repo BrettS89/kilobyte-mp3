@@ -25,5 +25,6 @@ void clearFrameBuffer(void);
 void drawPixel(uint8_t y, uint8_t x);
 void drawRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
 void fillRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
+void dma1Stream6Init(void);
 
 #endif /* DISPLAY_H_ */

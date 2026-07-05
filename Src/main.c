@@ -24,6 +24,7 @@ int main() {
 
 	fontInit();
     oledInit();
+	dma1Stream6Init();
     oledClear();
 
     printf("initializing audio\r\n");
@@ -59,8 +60,6 @@ int main() {
 
     	    if (state.player.isPlaying) {
     	        uint32_t position = audioGetPosition();
-
-//    	        printf("position: %d\r\n", (int)position);
 
     	        if (position != state.player.position) {
     	            state.player.position = position;

@@ -11,16 +11,67 @@
 
 
 #include "stm32f4xx.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include "font.h"
 
 void i2cSendData(uint8_t data);
 void oledSetCursor(uint8_t page, uint8_t col);
+void i2cStop(void);
 
 uint8_t frameBuffer[8][128];
 
 bool frameBufferUpdated = false;
+
+// display.c — near your other statics
+static volatile bool dmaTransferInProgress = false;
+
+void dma1Stream6Init(void) {
+    RCC->AHB1ENR |= (1U << 21);
+
+    DMA1_Stream6->CR &= ~(1U << 0);
+    while (DMA1_Stream6->CR & (1U << 0)) {}
+
+    DMA1_Stream6->PAR = (uint32_t)&I2C1->DR;
+
+    DMA1_Stream6->CR &= ~(1U << 27);
+    DMA1_Stream6->CR &= ~(1U << 26);
+    DMA1_Stream6->CR |= (1U << 25);
+
+    DMA1_Stream6->CR &= ~(1U << 7);
+    DMA1_Stream6->CR |= (1U << 6);
+
+    DMA1_Stream6->CR |= (1U << 10);
+    DMA1_Stream6->CR |= (1U << 4);
+
+    DMA1_Stream6->FCR = 0;
+
+    I2C1->CR2 |= (1U << 11);
+
+    NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+}
+
+void dma1Stream6Start(uint32_t source, uint32_t len) {
+    DMA1->HIFCR |= (1U << 16) | (1U << 18) | (1U << 19) | (1U << 20) | (1U << 21);
+
+    DMA1_Stream6->CR &= ~(1U << 0);
+    while (DMA1_Stream6->CR & (1U << 0)) {}
+
+    DMA1_Stream6->M0AR = source;
+    DMA1_Stream6->NDTR = len;
+
+    DMA1_Stream6->CR |= (1U << 0);
+}
+
+void DMA1_Stream6_IRQHandler(void) {
+	if (DMA1->HISR & (1U << 21)) {
+		DMA1->HIFCR |= (1U << 21);
+		i2cStop();
+		frameBufferUpdated = false;
+		dmaTransferInProgress = false;
+	}
+}
 
 void i2cInit() {
 	// enable clock access for gpiob
@@ -69,8 +120,10 @@ void i2cInit() {
 	I2C1->CR2 &= ~(1U << 5);
 
 	I2C1->CCR = 80;  // standard mode 100kHz, F/S=0, DUTY=0
-
 	I2C1->TRISE  = 17;          // max rise time
+	// FOR FAST 400kHz
+//	I2C1->CCR = (1U << 15) | (1U << 14) | 14;  // fast mode, F/S=1, DUTY=1, CCR=14
+//	I2C1->TRISE = 6;                            // max rise time for fast mode
 
 	// enable I2C1
 	I2C1->CR1 |= (1U << 0);
@@ -253,23 +306,22 @@ void setFrameBufferUpdated() {
 }
 
 void drawFrame() {
-	if (!frameBufferUpdated) return;
+    if (!frameBufferUpdated) return;
+    if (dmaTransferInProgress) return;
 
-	oledSetCursor(0, 0);
+    dmaTransferInProgress = true;
+
+    oledSetCursor(0, 0);
+
+    printf("in1\r\n");
 
     i2cStart();
-    i2cSendAddress(0x3C);  // OLED address
-    i2cSendData(0x40);     // control byte - data
+    i2cSendAddress(0x3C);
+    i2cSendData(0x40);
 
-	for (int i = 0; i < 8; i++) {
-		for (int j = 0; j < 128; j++) {
-		    i2cSendData(frameBuffer[i][j]);     // the actual data
-		}
-	}
+    printf("in2\r\n");
 
-    i2cStop();
-
-    frameBufferUpdated = false;
+    dma1Stream6Start((uint32_t)frameBuffer, 1024);
 }
 
 void clearFrameBuffer(void) {
