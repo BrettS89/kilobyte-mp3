@@ -14,6 +14,7 @@
 #include "screens.h"
 #include "sdcard.h"
 #include "audio.h"
+#include "index-tracks.h"
 
 static void homeScreenSelectInputHandler(State *state);
 static void musicScreenSelectInputHandler(State *state);
@@ -52,15 +53,26 @@ static void musicScreenSelectInputHandler(State *state) {
 
 	ScrollableItem item = state->navigationHistory[state->historyIndex].items[cursorIndex];
 
-	navigate(state, item.screenTrigger);
+	if (item.screenTrigger == SONGS) {
+		requestInitialTrackLoad();
+//		uint32_t trackCount;
+//		loadTrackWindow(state->trackList.tracks, 0, 16, &trackCount);
+//		state->trackList.totalCount = trackCount;
+	}
+
+//	navigate(state, item.screenTrigger);
 }
 
 static void songsScreenSelectInputHandler(State *state) {
-    uint32_t cursorIndex = state->navigationHistory[state->historyIndex].cursorIndex;
-    ScrollableItem item = state->navigationHistory[state->historyIndex].items[cursorIndex];
+    uint32_t windowStart = state->trackList.tracks[0].index;
+    uint32_t positionInWindow = state->trackList.cursorIndex - windowStart;
 
-    strncpy(state->player.filename, item.name, sizeof(state->player.filename) - 1);
-    state->player.filename[sizeof(state->player.filename) - 1] = '\0';
+    TrackRecord track = state->trackList.tracks[positionInWindow];
+
+    strncpy(state->player.filename, track.filename, sizeof(state->player.filename) - 1);
+    strncpy(state->player.album, track.album, sizeof(state->player.album) - 1);
+    strncpy(state->player.artist, track.artist, sizeof(state->player.artist) - 1);
+    strncpy(state->player.title, track.title, sizeof(state->player.title) - 1);
 
     state->player.isPlaying = true;
     state->player.position = 0;

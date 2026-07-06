@@ -147,7 +147,7 @@ void vs1053InitChip(void) {
     vs1053WaitForDREQ();
 
     // set volume (0x00 = loudest, 0xFE = quietest per channel)
-    vs1053WriteRegister(0x0B, 0x0000);
+    vs1053WriteRegister(0x0B, 0x1414);
 
     // set clock multiplier - required for real time decoding
     vs1053WriteRegister(0x03, 0x9800);

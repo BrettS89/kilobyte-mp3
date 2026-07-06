@@ -43,26 +43,6 @@ void audioRequestPlayFile(const char *filename) {
     songChangeRequested = true;
 }
 
-//void audioPlayFile(const char *filename) {
-//	audioStream.isPlaying = false;
-//
-//    if (audioStream.isOpen) {
-//        f_close(&audioStream.file);
-//        audioStream.isOpen = false;
-//    }
-//
-//    vs1053WriteRegister(0x04, 0x0000);
-//
-//    if (f_open(&audioStream.file, filename, FA_READ) != FR_OK) {
-//        printf("Failed to open file: %s\r\n", filename);
-//        audioStream.isPlaying = false;
-//        return;
-//    }
-//
-//    audioStream.isOpen = true;
-//    audioStream.isPlaying = true;
-//}
-
 static uint8_t vs1053ReadEndFillByte(void) {
     vs1053WriteRegister(0x07, 0x1E06);            // SCI_WRAMADDR -> endFillByte param
     return (uint8_t)(vs1053ReadRegister(0x06) & 0xFF);  // SCI_WRAM low byte

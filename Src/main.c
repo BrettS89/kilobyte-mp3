@@ -12,6 +12,7 @@
 #include "ff.h"
 #include "audio.h"
 #include "systick.h"
+#include "index-tracks.h"
 
 
 int main() {
@@ -21,6 +22,16 @@ int main() {
 
 	FATFS fs;
 	FRESULT res = f_mount(&fs, "", 1);
+
+	if (res == FR_OK) {
+		printf("SD card mounted successfully!\r\n");
+	} else {
+		printf("Mount failed: %d\r\n", res);
+	}
+
+	indexSongList();
+
+	loadTotalTrackCount(&state.trackList.totalTracksInSystem);
 
 	fontInit();
     oledInit();
@@ -39,16 +50,11 @@ int main() {
 
     navigate(&state, HOME);
 
-    if (res == FR_OK) {
-		printf("SD card mounted successfully!\r\n");
-	} else {
-		printf("Mount failed: %d\r\n", res);
-	}
-
     static uint32_t lastPositionUpdate = 0;
 
     while(1) {
     	audioProcess();
+    	runInputRequests(&state);
 
     	if (msTicks - lastPositionUpdate >= 100) {
     	    lastPositionUpdate = msTicks;

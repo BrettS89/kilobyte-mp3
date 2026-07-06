@@ -18,5 +18,12 @@ void scrollDownInputHandler(State *state);
 void scrollUpInputHandler(State *state);
 void selectInputHandler(State *state);
 void playPauseInputHandler(State *state);
+void maybeRefillTrackWindow(State *state);
+bool loadTrackWindow(TrackRecord tracks[], uint32_t startIndex, uint32_t count, uint32_t *trackCount);
+void requestInitialTrackLoad();
+void requestRefillTrackWindow();
+void runInputRequests(State *state);
+void requestScrollDownRefillTrackWindow();
+void requestScrollUpRefillTrackWindow();
 
 #endif /* CONTROLS_H_ */

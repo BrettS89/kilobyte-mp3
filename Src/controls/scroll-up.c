@@ -56,13 +56,15 @@ static void musicScreenScrollUpInputHandler(State *state) {
 }
 
 static void songsScreenScrollUpInputHandler(State *state) {
-	if (state->navigationHistory[state->historyIndex].cursorIndex == 0) {
-		return;
-	}
+    if (state->trackList.cursorIndex == 0) {
+        return;
+    }
 
-	state->navigationHistory[state->historyIndex].cursorIndex--;
+    state->trackList.cursorIndex--;
 
-	drawScreen(state);
+    requestScrollUpRefillTrackWindow();
+
+    drawScreen(state);
 }
 
 static void playerScreenScrollUpInputHandler(State *state) {

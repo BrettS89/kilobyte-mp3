@@ -62,15 +62,15 @@ static void musicScreenScrollDownInputHandler(State *state) {
 }
 
 static void songsScreenScrollDownInputHandler(State *state) {
-	uint32_t scrollableItemCount = state->navigationHistory[state->historyIndex].scrollableItemCount;
+    if (state->trackList.cursorIndex + 1 == state->trackList.totalTracksInSystem) {
+        return;
+    }
 
-	if (state->navigationHistory[state->historyIndex].cursorIndex + 1 == scrollableItemCount) {
-		return;
-	}
+    state->trackList.cursorIndex++;
 
-	state->navigationHistory[state->historyIndex].cursorIndex++;
+    requestScrollDownRefillTrackWindow();
 
-	drawScreen(state);
+    drawScreen(state);
 }
 
 static void playerScreenScrollDownInputHandler(State *state) {

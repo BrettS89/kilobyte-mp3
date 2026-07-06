@@ -5,7 +5,6 @@
  *      Author: brettsodie
  */
 
-
 #include <string.h>
 #include <stdio.h>
 #include "state.h"
@@ -15,13 +14,17 @@
 #include "sdcard.h"
 
 void drawPlayerScreen(State *state) {
-    printf("position: %d\r\n", (int)state->player.position);
-
     clearFrameBuffer();
 
     renderHeaderInverse("Now Playing", state);
 
-    drawString(3, 2, state->player.filename);
+    if (state->player.artist && state->player.album && state->player.title) {
+    	drawString(2, 2, state->player.artist);
+    	drawString(3, 2, state->player.album);
+    	drawString(4, 2, state->player.title);
+    }	else {
+    	drawString(3, 2, state->player.filename);
+    }
 
     renderPlayerProgressBar(state, 6);
 
