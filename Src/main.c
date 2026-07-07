@@ -30,6 +30,7 @@ int main() {
 	}
 
 	indexSongList();
+	trackIndexInit();
 
 	loadTotalTrackCount(&state.trackList.totalTracksInSystem);
 

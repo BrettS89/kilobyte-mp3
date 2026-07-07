@@ -17,6 +17,9 @@ void initialLoadTrackWindow(State *state);
 void maybeRefillTrackWindowOnScrollDown(State *state);
 void maybeRefillTrackWindowOnScrollUp(State *state);
 
+static FIL idxFile;
+static bool idxOpen = false;
+
 static bool initialTrackLoadRequested = false;
 static bool scrollDownRefillRequested = false;
 static bool scrollUpRefillRequested = false;
@@ -48,34 +51,33 @@ void runInputRequests(State *state) {
 	}
 }
 
-bool loadTrackWindow(TrackRecord tracks[], uint32_t startIndex, uint32_t count, uint32_t *trackCount) {
-    FIL file;
-
-    if (f_open(&file, "/system/kilobyte.idx", FA_READ) != FR_OK) {
+bool trackIndexInit(void) {
+    if (f_open(&idxFile, "/system/kilobyte.idx", FA_READ) != FR_OK) {
         printf("failed to open kilobyte.idx\r\n");
         return false;
     }
+    idxOpen = true;
+    return true;
+}
+
+
+bool loadTrackWindow(TrackRecord tracks[], uint32_t startIndex, uint32_t count, uint32_t *trackCount) {
+    if (!idxOpen) return false;
 
     FSIZE_t offset = (FSIZE_t)startIndex * sizeof(TrackRecord);
 
-    if (f_lseek(&file, offset) != FR_OK) {
-        f_close(&file);
+    if (f_lseek(&idxFile, offset) != FR_OK) {
         printf("failed to seek to index %lu\r\n", startIndex);
         return false;
     }
 
     UINT bytesRead;
-    FRESULT res = f_read(&file, tracks, count * sizeof(TrackRecord), &bytesRead);
-
-    f_close(&file);
-
-    if (res != FR_OK) {
+    if (f_read(&idxFile, tracks, count * sizeof(TrackRecord), &bytesRead) != FR_OK) {
         printf("failed to read tracks\r\n");
         return false;
     }
 
     *trackCount = bytesRead / sizeof(TrackRecord);
-
     return true;
 }
 
@@ -135,7 +137,6 @@ void maybeRefillTrackWindowOnScrollUp(State *state) {
 
     if (positionInWindow < 4) {
         uint32_t newStart = (globalCursor < 8) ? 0 : globalCursor - 8;
-        printf("reload\r\n");
         loadTrackWindow(state->trackList.tracks, newStart, 16, &state->trackList.totalCount);
     }
 }

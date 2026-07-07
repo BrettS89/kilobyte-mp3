@@ -19,6 +19,9 @@
 #define CMD58   58
 #define ACMD41  41
 
+#define CMD12   12
+#define CMD18   18
+
 static uint8_t sdSendCmd(uint8_t cmd, uint32_t arg) {
     uint8_t crc = 0x01;
     if (cmd == CMD0) crc = 0x95;
@@ -101,6 +104,39 @@ uint8_t sdReadBlock(uint32_t blockAddr, uint8_t *buffer) {
     // discard 2 CRC bytes
     spi1Transfer(0xFF);
     spi1Transfer(0xFF);
+
+    spi1Deselect();
+    return 1;
+}
+
+uint8_t sdReadBlocks(uint32_t blockAddr, uint8_t *buffer, uint32_t count) {
+    if (count == 1) return sdReadBlock(blockAddr, buffer);
+
+    spi1Select();
+    if (sdSendCmd(CMD18, blockAddr) != 0x00) {
+        spi1Deselect();
+        return 0;
+    }
+
+    for (uint32_t b = 0; b < count; b++) {
+        uint32_t timeout = 100000;
+        uint8_t token;
+        do {
+            token = spi1Transfer(0xFF);
+        } while (token != 0xFE && --timeout);
+        if (timeout == 0) { spi1Deselect(); return 0; }
+
+        for (int i = 0; i < 512; i++) {
+            buffer[b * 512 + i] = spi1Transfer(0xFF);
+        }
+        spi1Transfer(0xFF);  // CRC
+        spi1Transfer(0xFF);
+    }
+
+    // CMD12: stop transmission. Skip the stuff byte the card
+    // emits right after the command before its R1b response.
+    sdSendCmd(CMD12, 0);
+    while (spi1Transfer(0xFF) == 0x00);  // wait out busy
 
     spi1Deselect();
     return 1;

@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 void audioInit();
+uint8_t spi2Transfer(uint8_t data);
 void vs1053PlayFile(const char *filename);
 void vs1053SendData(uint8_t *data, uint16_t length);
 uint16_t vs1053ReadRegister(uint8_t address);

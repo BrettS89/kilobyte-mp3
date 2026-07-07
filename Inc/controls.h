@@ -11,6 +11,7 @@
 #include "state.h"
 
 void controlsInit();
+bool trackIndexInit(void);
 
 // Input handlers
 void menuInputHandler(State *state);
