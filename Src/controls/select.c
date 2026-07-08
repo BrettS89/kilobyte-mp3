@@ -55,32 +55,18 @@ static void musicScreenSelectInputHandler(State *state) {
 
 	if (item.screenTrigger == SONGS) {
 		requestInitialTrackLoad();
-//		uint32_t trackCount;
-//		loadTrackWindow(state->trackList.tracks, 0, 16, &trackCount);
-//		state->trackList.totalCount = trackCount;
+		state->trackList.cursorIndex = 0;
 	}
-
-//	navigate(state, item.screenTrigger);
 }
 
 static void songsScreenSelectInputHandler(State *state) {
     uint32_t windowStart = state->trackList.tracks[0].index;
     uint32_t positionInWindow = state->trackList.cursorIndex - windowStart;
-
     TrackRecord track = state->trackList.tracks[positionInWindow];
 
-    strncpy(state->player.filename, track.filename, sizeof(state->player.filename) - 1);
-    strncpy(state->player.album, track.album, sizeof(state->player.album) - 1);
-    strncpy(state->player.artist, track.artist, sizeof(state->player.artist) - 1);
-    strncpy(state->player.title, track.title, sizeof(state->player.title) - 1);
-
-    state->player.isPlaying = true;
-    state->player.position = 0;
-    state->player.duration = 0;
+	playAudioFile(state, &track);
 
     navigate(state, PLAYER);
-
-    audioRequestPlayFile(state->player.filename);
 }
 
 static void playerScreenSelectInputHandler(State *state) {

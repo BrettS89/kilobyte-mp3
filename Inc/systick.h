@@ -14,5 +14,6 @@ extern volatile uint32_t msTicks;
 
 void systickDelayMs(int);
 void systickInit(void);
+uint32_t millis(void);
 
 #endif /* SYSTICK_H_ */

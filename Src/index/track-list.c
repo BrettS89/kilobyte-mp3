@@ -79,12 +79,13 @@ bool writeFile(TrackRecord tracks[], uint32_t count, uint32_t fileNum) {
 }
 
 bool readID3Tags(const char *filename, char *title, char *artist, char *album) {
+    // NOTE: title, artist, album must each be at least 64 bytes
     FIL file;
     UINT bytesRead;
 
-    title[0] = '\0';
+    title[0]  = '\0';
     artist[0] = '\0';
-    album[0] = '\0';
+    album[0]  = '\0';
 
     if (f_open(&file, filename, FA_READ) != FR_OK) {
         return false;
@@ -98,51 +99,131 @@ bool readID3Tags(const char *filename, char *title, char *artist, char *album) {
         return false;  // no ID3v2 tag present at all
     }
 
-    uint32_t tagSize = ((header[6] & 0x7F) << 21) |
-                        ((header[7] & 0x7F) << 14) |
-                        ((header[8] & 0x7F) << 7)  |
-                         (header[9] & 0x7F);
+    uint8_t majorVersion = header[3];       // 3 = ID3v2.3, 4 = ID3v2.4
+    uint8_t tagFlags     = header[5];
+
+    // Tag size is always synchsafe (7 bits per byte)
+    uint32_t tagSize = ((uint32_t)(header[6] & 0x7F) << 21) |
+                       ((uint32_t)(header[7] & 0x7F) << 14) |
+                       ((uint32_t)(header[8] & 0x7F) << 7)  |
+                        (uint32_t)(header[9] & 0x7F);
 
     uint32_t bytesConsumed = 0;
 
-    while (bytesConsumed < tagSize) {
+    // Skip extended header if present
+    if (tagFlags & 0x40) {
+        uint8_t extHeader[4];
+        f_read(&file, extHeader, 4, &bytesRead);
+        if (bytesRead != 4) {
+            f_close(&file);
+            return false;
+        }
+
+        uint32_t extSize;
+        if (majorVersion == 4) {
+            // v2.4: synchsafe, size includes these 4 bytes
+            extSize = ((uint32_t)(extHeader[0] & 0x7F) << 21) |
+                      ((uint32_t)(extHeader[1] & 0x7F) << 14) |
+                      ((uint32_t)(extHeader[2] & 0x7F) << 7)  |
+                       (uint32_t)(extHeader[3] & 0x7F);
+            f_lseek(&file, f_tell(&file) + (extSize - 4));
+            bytesConsumed += extSize;
+        } else {
+            // v2.3: plain int, size EXCLUDES these 4 bytes
+            extSize = ((uint32_t)extHeader[0] << 24) |
+                      ((uint32_t)extHeader[1] << 16) |
+                      ((uint32_t)extHeader[2] << 8)  |
+                       (uint32_t)extHeader[3];
+            f_lseek(&file, f_tell(&file) + extSize);
+            bytesConsumed += 4 + extSize;
+        }
+    }
+
+    while (bytesConsumed + 10 <= tagSize) {
         uint8_t frameHeader[10];
         f_read(&file, frameHeader, 10, &bytesRead);
 
         if (bytesRead != 10) break;
 
+        // Frame ID of 0x00 means we've hit the padding region — done
+        if (frameHeader[0] == 0) break;
+
         char frameId[5] = {
             frameHeader[0], frameHeader[1], frameHeader[2], frameHeader[3], '\0'
         };
 
-        uint32_t frameSize = ((uint32_t)frameHeader[4] << 24) |
-                             ((uint32_t)frameHeader[5] << 16) |
-                             ((uint32_t)frameHeader[6] << 8)  |
-                              (uint32_t)frameHeader[7];
+        // v2.3 frame size: plain big-endian. v2.4: synchsafe.
+        uint32_t frameSize;
+        if (majorVersion == 4) {
+            frameSize = ((uint32_t)(frameHeader[4] & 0x7F) << 21) |
+                        ((uint32_t)(frameHeader[5] & 0x7F) << 14) |
+                        ((uint32_t)(frameHeader[6] & 0x7F) << 7)  |
+                         (uint32_t)(frameHeader[7] & 0x7F);
+        } else {
+            frameSize = ((uint32_t)frameHeader[4] << 24) |
+                        ((uint32_t)frameHeader[5] << 16) |
+                        ((uint32_t)frameHeader[6] << 8)  |
+                         (uint32_t)frameHeader[7];
+        }
 
         bytesConsumed += 10;
 
-        if (frameSize == 0 || frameSize > 1000) break;  // sanity check, avoid runaway reads
+        if (frameSize == 0) break;                        // malformed frame — bail
+        if (bytesConsumed + frameSize > tagSize) break;   // frame overruns tag — corrupt
 
         char *target = NULL;
-        if (strcmp(frameId, "TIT2") == 0) target = title;
+        if      (strcmp(frameId, "TIT2") == 0) target = title;
         else if (strcmp(frameId, "TPE1") == 0) target = artist;
         else if (strcmp(frameId, "TALB") == 0) target = album;
 
-        if (target != NULL) {
+        if (target != NULL && frameSize > 1) {
             uint8_t encoding;
             f_read(&file, &encoding, 1, &bytesRead);
 
             uint32_t textLen = frameSize - 1;
-            if (textLen > 63) textLen = 63;
+            uint8_t raw[128];
+            uint32_t toRead = (textLen < sizeof(raw)) ? textLen : sizeof(raw);
 
-            f_read(&file, target, textLen, &bytesRead);
-            target[bytesRead] = '\0';
+            f_read(&file, raw, toRead, &bytesRead);
 
-            if (frameSize - 1 > textLen) {
-                f_lseek(&file, f_tell(&file) + (frameSize - 1 - textLen));
+            if (encoding == 0x01 || encoding == 0x02) {
+                // UTF-16: skip BOM if present, extract ASCII-range chars
+                uint32_t i = 0;
+                uint32_t charOffset = 0;   // which byte of each pair holds the char
+
+                if (bytesRead >= 2 && raw[0] == 0xFF && raw[1] == 0xFE) {
+                    i = 2;                 // LE BOM: char is first byte of pair
+                    charOffset = 0;
+                } else if (bytesRead >= 2 && raw[0] == 0xFE && raw[1] == 0xFF) {
+                    i = 2;                 // BE BOM: char is second byte of pair
+                    charOffset = 1;
+                } else if (encoding == 0x02) {
+                    charOffset = 1;        // UTF-16BE without BOM
+                }
+
+                uint32_t out = 0;
+                for (; i + 1 < bytesRead && out < 63; i += 2) {
+                    char c = (char)raw[i + charOffset];
+                    if (c == '\0') break;
+                    target[out++] = c;
+                }
+                target[out] = '\0';
+            } else {
+                // ISO-8859-1 (0x00) or UTF-8 (0x03): copy through
+                uint32_t out = (bytesRead < 63) ? bytesRead : 63;
+                memcpy(target, raw, out);
+                target[out] = '\0';
+
+                // Trim trailing nulls some taggers include in the frame
+                while (out > 0 && target[out - 1] == '\0') out--;
+            }
+
+            // Skip whatever portion of the frame we didn't read
+            if (textLen > bytesRead) {
+                f_lseek(&file, f_tell(&file) + (textLen - bytesRead));
             }
         } else {
+            // Not a frame we want (APIC, COMM, etc.) — skip it, however large
             f_lseek(&file, f_tell(&file) + frameSize);
         }
 

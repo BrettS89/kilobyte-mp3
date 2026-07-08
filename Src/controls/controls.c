@@ -3,11 +3,26 @@
  *
  *  Created on: Jun 25, 2026
  *      Author: brettsodie
+ *
+ *  PIN OUT
+ *
+ *  SCROLL UP: PA6
+ *  SCROLL DOWN: PA7
  */
+
 #include <stdio.h>
+#include <stdint.h>
 #include "stm32f4xx.h"
+#include "systick.h"
 #include "controls.h"
 #include "state.h"
+
+#define HOLD_INITIAL_DELAY_MS  200
+#define HOLD_REPEAT_MS         60     // ~14 steps/sec
+
+volatile uint8_t  buttonEvent   = 0;       // 0 = none, else pin number
+volatile uint8_t  heldPin       = 0;       // pin currently held, 0 = none
+volatile uint32_t heldSinceMs   = 0;
 
 void controlsInit() {
     // enable clocks
@@ -45,6 +60,26 @@ void controlsInit() {
 
 static uint32_t pendingPin = 0;
 
+void dispatchButton(State *state, uint8_t pin) {
+	switch (pendingPin) {
+		case 5:   // menu/back
+			menuInputHandler(state);
+			break;
+		case 6:   // scroll up
+			scrollUpInputHandler(state);
+			break;
+		case 7:   // scroll down
+			scrollDownInputHandler(state);
+			break;
+		case 8:   // select
+			selectInputHandler(state);
+			break;
+		case 9:   // play/pause
+			playPauseInputHandler(state);
+			break;
+	}
+}
+
 void EXTI9_5_IRQHandler(void) {
     // if timer already running ignore this press
     if (TIM2->CR1 & (1U << 0)) {
@@ -63,29 +98,45 @@ void EXTI9_5_IRQHandler(void) {
     TIM2->CR1 |= (1U << 0);
 }
 
+void controlsService(State *state) {
+    // 1. Dispatch any confirmed press from the ISR
+    if (buttonEvent) {
+        uint8_t pin = buttonEvent;
+        buttonEvent = 0;
+        dispatchButton(state, pin);          // the switch from your TIM2 ISR, moved here
+    }
+
+    // 2. Hold tracking
+    if (heldPin == 0) return;
+
+    if (GPIOA->IDR & (1U << heldPin)) {      // pin high = released
+        heldPin = 0;
+        return;
+    }
+
+    // Only the scroll buttons repeat
+    if (heldPin != 6 && heldPin != 7) return;
+
+    uint32_t now  = millis();
+    uint32_t held = now - heldSinceMs;
+
+    if (held < HOLD_INITIAL_DELAY_MS) return;
+
+    static uint32_t lastRepeatMs = 0;
+    if (now - lastRepeatMs >= HOLD_REPEAT_MS) {
+        lastRepeatMs = now;
+        dispatchButton(state, heldPin);      // same handler, re-fired
+    }
+}
+
 void TIM2_IRQHandler(void) {
     // clear flag and stop timer
     TIM2->SR  &= ~(1U << 0);
     TIM2->CR1 &= ~(1U << 0);
 
-    // check if button still pressed after 20ms
     if (!(GPIOA->IDR & (1U << pendingPin))) {
-        switch (pendingPin) {
-            case 5:   // menu/back
-                menuInputHandler(&state);
-                break;
-            case 6:   // scroll up
-                scrollUpInputHandler(&state);
-                break;
-            case 7:   // scroll down
-                scrollDownInputHandler(&state);
-                break;
-            case 8:   // select
-                selectInputHandler(&state);
-                break;
-            case 9:   // play/pause
-                playPauseInputHandler(&state);
-                break;
-        }
-    }
+		buttonEvent = pendingPin;          // main loop dispatches this
+		heldPin     = pendingPin;          // arm hold tracking
+		heldSinceMs = millis();
+	}
 }

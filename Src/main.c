@@ -14,7 +14,6 @@
 #include "systick.h"
 #include "index-tracks.h"
 
-
 int main() {
 	uartTxinit();
 	spi1Init();
@@ -30,7 +29,7 @@ int main() {
 	}
 
 	indexSongList();
-	trackIndexInit();
+	trackIndexInit(&state);
 
 	loadTotalTrackCount(&state.trackList.totalTracksInSystem);
 
@@ -54,8 +53,10 @@ int main() {
     static uint32_t lastPositionUpdate = 0;
 
     while(1) {
-    	audioProcess();
+    	audioProcess(&state);
+    	controlsService(&state);
     	runInputRequests(&state);
+    	playbackPrefetchNext(&state);
 
     	if (msTicks - lastPositionUpdate >= 100) {
     	    lastPositionUpdate = msTicks;
@@ -77,9 +78,13 @@ int main() {
     	        }
     	    }
 
-    	    drawFrame();
+
     	}
+
+    	drawFrame();
     }
+
+
 
     return 0;
 }

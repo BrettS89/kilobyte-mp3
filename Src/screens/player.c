@@ -18,12 +18,14 @@ void drawPlayerScreen(State *state) {
 
     renderHeaderInverse("Now Playing", state);
 
-    if (state->player.artist && state->player.album && state->player.title) {
-    	drawString(2, 2, state->player.artist);
-    	drawString(3, 2, state->player.album);
-    	drawString(4, 2, state->player.title);
-    }	else {
-    	drawString(3, 2, state->player.filename);
+    if (state->player.artist[0] != '\0' &&
+        state->player.album[0]  != '\0' &&
+        state->player.title[0]  != '\0') {
+        drawString(2, 2, state->player.artist);
+        drawString(3, 2, state->player.album);
+        drawString(4, 2, state->player.title);
+    } else {
+        drawString(3, 2, state->player.filename);
     }
 
     renderPlayerProgressBar(state, 6);

@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "stm32f4xx.h"
+#include "state.h"
 #include "audio.h"
 #include "ff.h"
 #include "sdcard.h"
@@ -145,7 +146,70 @@ bool audioIsPlaying(void) {
     return audioStream.isPlaying;
 }
 
-void audioProcess(void) {
+void playbackPrefetchNext(State *state) {
+	if (!state->player.isPlaying || !state->playbackContext.nextTrackIsValid || state->playbackContext.nextTrackIsLoaded) return;
+
+	printf("prefetching next running logic\r\n");
+
+	PlaybackContext *ctx = &state->playbackContext;
+
+	TrackRecord next;
+	FRESULT res;
+	UINT bytesRead;
+
+	res = f_lseek(&state->indexFiles.allTracksFile, (DWORD)(state->player.track.index + 1) * sizeof(TrackRecord));
+
+	if (res != FR_OK) {
+		printf("prefetching seek error\r\n");
+
+		return;
+	}
+
+	res = f_read(&state->indexFiles.allTracksFile, &next, sizeof(TrackRecord), &bytesRead);
+
+	if (res != FR_OK) {
+		printf("prefetching read error\r\n");
+	    return;                              // transient error: leave flags alone, retry next pass
+	}
+
+	if (bytesRead < sizeof(TrackRecord)) {
+	    ctx->nextTrackIsValid = false;
+	    ctx->nextTrackIsLoaded = false;
+	    memset(&ctx->nextTrack, 0, sizeof(TrackRecord));
+	    printf("prefetching no bytes read error\r\n");
+	    return;
+	}
+
+	ctx->nextTrack = next;
+	ctx->nextTrackIsLoaded = true;
+	ctx->nextTrackIsValid = true;
+
+	printf("song: %s\r\n", ctx->nextTrack.filename);
+}
+
+void onTrackEnd(State *state) {
+    PlaybackContext *ctx = &state->playbackContext;
+
+    printf("In onTrackEnd\r\n");
+
+    if (ctx->nextTrackIsLoaded) {
+    	printf("nextTrackIsLoaded\r\n");
+
+    	playAudioFile(state, &ctx->nextTrack);
+    }	else if (ctx->nextTrackIsValid) {
+    	printf("onTrackEndPrefetchNext\r\n");
+    	playbackPrefetchNext(state);
+
+    	if (ctx->nextTrackIsLoaded) {
+    		playAudioFile(state, &ctx->nextTrack);
+    	}	else {
+    		ctx->nextTrackIsLoaded = false;
+    		ctx->nextTrackIsValid = false;
+    	}
+    }
+}
+
+void audioProcess(State *state) {
     // ---------- deferred song change ----------
     if (songChangeRequested) {
         songChangeRequested = false;
@@ -227,6 +291,8 @@ void audioProcess(void) {
                 audioStream.isPlaying = false;
                 audioStream.currentFilename[0] = '\0';
                 vs1053FinishSong();
+
+                onTrackEnd(state);
                 return;
             }
         }

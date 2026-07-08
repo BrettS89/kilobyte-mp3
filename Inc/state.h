@@ -10,10 +10,16 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "ff.h"
 
 #define SCREEN_NUM 5
 #define SCREEN_NAME_MAX_LEN 10
 #define SCROLLABLE_ITEMS_MAX_LEN 10
+
+typedef struct {
+	FIL allTracksFile;
+	bool allTracksFileOpen;
+} IndexFiles;
 
 typedef struct {
 	uint32_t index;
@@ -23,6 +29,23 @@ typedef struct {
     char album[64];
     uint32_t duration;
 } __attribute__((packed)) TrackRecord;
+
+typedef enum {
+    SOURCE_ALL_TRACKS,
+    SOURCE_ARTIST,
+    SOURCE_ALBUM,
+    SOURCE_PLAYLIST
+} PlaybackSourceType;
+
+typedef struct {
+    PlaybackSourceType sourceType;
+    uint16_t sourceId;        // which playlist/album/artist; unused for ALL
+    uint16_t trackCount;      // total tracks in the source, captured at play start
+    TrackRecord currentTrack;    // whatever you need to identify/open the file
+    TrackRecord nextTrack;       // prefetched, see below
+    bool nextTrackIsLoaded;
+    bool nextTrackIsValid;
+} PlaybackContext;
 
 typedef struct {
 	TrackRecord tracks[16];
@@ -58,6 +81,7 @@ typedef struct {
 	char album[64];
 	char title[64];
 	char filename[256];
+	TrackRecord track;
 	uint32_t duration;
 	uint32_t position;
 	bool isPlaying;
@@ -68,6 +92,8 @@ typedef struct {
 	uint32_t historyIndex;
 	Player player;
 	TrackList trackList;
+	PlaybackContext playbackContext;
+	IndexFiles indexFiles;
 } State;
 
 extern State state;
