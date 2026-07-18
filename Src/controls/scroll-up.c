@@ -10,11 +10,13 @@
 #include "state.h"
 #include "controls.h"
 #include "screens.h"
+#include "window.h"
 
 static void homeScreenScrollUpInputHandler(State *state);
 static void musicScreenScrollUpInputHandler(State *state);
 static void songsScreenScrollUpInputHandler(State *state);
 static void playerScreenScrollUpInputHandler(State *state);
+static void artistScreenScrollUpInputHandler(State *state);
 
 void scrollUpInputHandler(State *state) {
 	switch(state->navigationHistory[state->historyIndex].name) {
@@ -30,6 +32,8 @@ void scrollUpInputHandler(State *state) {
 		case PLAYER:
 			playerScreenScrollUpInputHandler(state);
 			break;
+		case ARTISTS:
+			artistScreenScrollUpInputHandler(state);
 		default:
 			break;
 	}
@@ -63,6 +67,18 @@ static void songsScreenScrollUpInputHandler(State *state) {
     state->trackList.cursorIndex--;
 
     requestScrollUpRefillTrackWindow();
+
+    drawScreen(state);
+}
+
+static void artistScreenScrollUpInputHandler(State *state) {
+    if (state->artistList.cursorIndex == 0) {
+        return;
+    }
+
+    state->artistList.cursorIndex--;
+
+    requestScrollUpRefillArtistWindow();
 
     drawScreen(state);
 }

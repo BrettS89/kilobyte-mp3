@@ -53,7 +53,15 @@ bool trackIndexInit(State *state) {
         printf("failed to open kilobyte.idx\r\n");
         return false;
     }
+
     state->indexFiles.allTracksFileOpen = true;
+
+    FSIZE_t fileSize = f_size(&state->indexFiles.allTracksFile);
+
+    printf("filesize %d\r\n", (int)fileSize);
+
+    state->trackList.totalTracksInSystem = fileSize / sizeof(TrackRecord);
+
     return true;
 }
 

@@ -7247,3 +7247,157 @@ FRESULT f_setcp (
 }
 #endif	/* FF_CODE_PAGE == 0 */
 
+
+
+// sol code
+FRESULT f_readdir_ref (
+    DIR* dp,
+    FILINFO* fno,
+    FF_DIRENT_REF* ref
+)
+{
+    FRESULT res;
+    FATFS *fs;
+    DEF_NAMEBUFF
+
+    if (ref != NULL) {
+        ref->fs = NULL;
+        ref->mount_id = 0;
+        ref->attr = 0;
+        ref->start_cluster = 0;
+        ref->file_size = 0;
+    }
+
+    res = validate(&dp->obj, &fs);
+
+    if (res == FR_OK) {
+        if (!fno) {
+            res = dir_sdi(dp, 0);
+        } else {
+            INIT_NAMEBUFF(fs);
+
+            fno->fname[0] = 0;
+            res = DIR_READ_FILE(dp);
+
+            if (res == FR_NO_FILE) {
+                res = FR_OK;
+            }
+
+            if (res == FR_OK) {
+                get_fileinfo(dp, fno);
+
+                if (ref != NULL && fno->fname[0] != '\0') {
+                    ref->fs = fs;
+                    ref->mount_id = fs->id;
+                    ref->attr = fno->fattrib;
+                    ref->start_cluster = ld_clust(fs, dp->dir);
+                    ref->file_size = fno->fsize;
+                }
+
+                res = dir_next(dp, 0);
+
+                if (res == FR_NO_FILE) {
+                    res = FR_OK;
+                }
+            }
+
+            FREE_NAMEBUFF();
+        }
+    }
+
+    if (fno && res != FR_OK) {
+        fno->fname[0] = 0;
+    }
+
+    LEAVE_FF(fs, res);
+}
+
+
+#if FF_FS_EXFAT != 0
+#error f_open_ref_read currently supports FAT12/16/32 only
+#endif
+
+#if FF_FS_LOCK != 0
+#error f_open_ref_read requires FF_FS_LOCK == 0
+#endif
+
+#if FF_FS_REENTRANT != 0
+#error f_open_ref_read requires FF_FS_REENTRANT == 0
+#endif
+
+FRESULT f_open_ref_read(
+    FIL *fp,
+    const FF_DIRENT_REF *ref
+) {
+    FATFS *fs;
+
+    if (fp == NULL) {
+        return FR_INVALID_OBJECT;
+    }
+
+    /*
+     * Make certain a failed call leaves an invalid file object.
+     * This also invalidates fp->sect and the private file buffer.
+     */
+    memset(fp, 0, sizeof(*fp));
+
+    if (ref == NULL || ref->fs == NULL) {
+        return FR_INVALID_OBJECT;
+    }
+
+    fs = ref->fs;
+
+    /*
+     * Detect a remount, card replacement, or reference left over from
+     * an earlier filesystem session.
+     */
+    if (fs->fs_type == 0 || fs->id != ref->mount_id) {
+        return FR_INVALID_OBJECT;
+    }
+
+    if ((ref->attr & (AM_DIR | AM_VOL)) != 0) {
+        return FR_NO_FILE;
+    }
+
+    /*
+     * Empty files normally have start cluster 0.
+     * Non-empty files must start at a valid data cluster.
+     *
+     * This check occurs before f_read can issue any disk access.
+     */
+    if (ref->file_size != 0) {
+        if (ref->start_cluster < 2 ||
+            ref->start_cluster >= fs->n_fatent) {
+            return FR_INT_ERR;
+        }
+    }
+
+    fp->obj.fs      = fs;
+    fp->obj.id      = fs->id;
+    fp->obj.attr    = ref->attr;
+    fp->obj.stat    = 0;
+    fp->obj.sclust  = ref->start_cluster;
+    fp->obj.objsize = ref->file_size;
+
+    fp->flag  = FA_READ;
+    fp->err   = 0;
+    fp->fptr  = 0;
+    fp->clust = 0;
+    fp->sect  = 0;
+
+#if !FF_FS_READONLY
+    /*
+     * Read-only opens never update their directory entry. Deliberately
+     * leave these invalid rather than retaining a pointer into fs->win[].
+     */
+    fp->dir_sect = 0;
+    fp->dir_ptr  = NULL;
+#endif
+
+#if FF_USE_FASTSEEK
+    fp->cltbl = NULL;
+#endif
+
+    return FR_OK;
+}
+

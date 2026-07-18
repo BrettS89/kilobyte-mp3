@@ -68,8 +68,26 @@ void spi1Deselect(void) {
 }
 
 void spi1SetSpeedFast(void) {
-    SPI1->CR1 &= ~(1U << 6);          // disable SPI
-    SPI1->CR1 &= ~(7U << 3);          // clear prescaler
-    SPI1->CR1 |= (1U << 3);           // prescaler /4 (fast for data transfer)
-    SPI1->CR1 |= (1U << 6);           // re-enable
+    /*
+     * Wait until the current SPI transaction is completely finished
+     * before changing the baud-rate divider.
+     */
+    while ((SPI1->SR & SPI_SR_TXE) == 0U) {
+    }
+
+    while ((SPI1->SR & SPI_SR_BSY) != 0U) {
+    }
+
+    SPI1->CR1 &= ~SPI_CR1_SPE;
+
+    /*
+     * BR = 000 means divide the APB2 peripheral clock by 2.
+     *
+     * If PCLK2 is 16 MHz:
+     *
+     *     SPI1 clock = 16 MHz / 2 = 8 MHz
+     */
+    SPI1->CR1 &= ~SPI_CR1_BR;
+
+    SPI1->CR1 |= SPI_CR1_SPE;
 }

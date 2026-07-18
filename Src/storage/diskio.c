@@ -26,16 +26,38 @@ DSTATUS disk_status(BYTE pdrv) {
     return 0;
 }
 
-DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
+DRESULT disk_read(
+    BYTE pdrv,
+    BYTE *buff,
+    LBA_t sector,
+    UINT count
+) {
+    (void)pdrv;
 
-	// then at the top of disk_read:
-	if (dbgWatch) {
-	    printf("disk_read: %u sectors\r\n", count);
-	}
+    if (
+        buff == NULL ||
+        count == 0U
+    ) {
+        return RES_PARERR;
+    }
 
-    return sdReadBlocks(sector, buff, count) ? RES_OK : RES_ERROR;
+    if (count == 1U) {
+        return sdReadBlock(
+            (uint32_t)sector,
+            buff
+        )
+            ? RES_OK
+            : RES_ERROR;
+    }
+
+    return sdReadBlocks(
+        (uint32_t)sector,
+        buff,
+        (uint32_t)count
+    )
+        ? RES_OK
+        : RES_ERROR;
 }
-
 //DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
 ////	printf("disk_read called: sector %lu count %u\r\n", sector, count);
 //    for (UINT i = 0; i < count; i++) {
@@ -46,13 +68,41 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
 //    return RES_OK;
 //}
 
-DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
-    for (UINT i = 0; i < count; i++) {
-        if (!sdWriteBlock(sector + i, buff + (i * 512))) {
-            return RES_ERROR;
-        }
+DRESULT disk_write(
+    BYTE pdrv,
+    const BYTE *buff,
+    LBA_t sector,
+    UINT count
+) {
+    /*
+     * Add a pdrv check here if your system supports only one physical
+     * drive and uses a specific drive number.
+     */
+    (void)pdrv;
+
+    if (
+        buff == NULL ||
+        count == 0U
+    ) {
+        return RES_PARERR;
     }
-    return RES_OK;
+
+    if (count == 1U) {
+        return sdWriteBlock(
+            (uint32_t)sector,
+            buff
+        )
+            ? RES_OK
+            : RES_ERROR;
+    }
+
+    return sdWriteBlocks(
+        (uint32_t)sector,
+        buff,
+        (uint32_t)count
+    )
+        ? RES_OK
+        : RES_ERROR;
 }
 
 DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff) {

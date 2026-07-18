@@ -16,6 +16,7 @@ static void musicScreenMenuInputHandler(State *state);
 static void songsScreenMenuInputHandler(State *state);
 static void playerScreenMenuInputHandler(State *state);
 static void radioScreenMenuInputHandler(State *state);
+static void artistScreenMenuInputHandler(State *state);
 
 void menuInputHandler(State *state) {
 	switch(state->navigationHistory[state->historyIndex].name) {
@@ -34,6 +35,8 @@ void menuInputHandler(State *state) {
 		case PLAYER:
 			playerScreenMenuInputHandler(state);
 			break;
+		case ARTISTS:
+			artistScreenMenuInputHandler(state);
 		default:
 			break;
 	}
@@ -56,5 +59,9 @@ static void songsScreenMenuInputHandler(State *state) {
 }
 
 static void playerScreenMenuInputHandler(State *state) {
+	onBack(state);
+}
+
+static void artistScreenMenuInputHandler(State *state) {
 	onBack(state);
 }

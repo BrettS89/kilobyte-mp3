@@ -18,7 +18,9 @@
 
 typedef struct {
 	FIL allTracksFile;
+	FIL allArtistsFile;
 	bool allTracksFileOpen;
+	bool allArtistsFileOpen;
 } IndexFiles;
 
 typedef struct {
@@ -53,6 +55,31 @@ typedef struct {
 	uint32_t totalCount;
 	uint32_t totalTracksInSystem;
 } TrackList;
+
+typedef struct {
+	uint32_t index;
+	char     name[48];       // artist name, NUL-terminated, cmpNoCase order
+	uint32_t firstTrack;     // artist's full run in grouped.idx
+	uint16_t trackCount;     //   (kept so artist-level play isn't a format change)
+	uint16_t firstAlbum;     // artist's album run in albums.idx
+	uint16_t albumCount;     //   Albums screen window = [firstAlbum, +albumCount)
+	uint16_t _reserved;      // pad to 4-byte multiple; zero-fill; future use
+} ArtistRecord;           // 60 bytes
+
+typedef struct {
+	ArtistRecord artists[16];
+	uint32_t cursorIndex;
+	uint32_t inWindowCount;
+	uint32_t totalArtists;
+} ArtistList;
+
+typedef struct {
+	uint32_t index;
+	char     name[48];
+	uint32_t firstTrack;
+	uint16_t trackCount;
+	uint16_t year;
+} AlbumRecord;
 
 typedef enum {
     HOME,
@@ -92,6 +119,7 @@ typedef struct {
 	uint32_t historyIndex;
 	Player player;
 	TrackList trackList;
+	ArtistList artistList;
 	PlaybackContext playbackContext;
 	IndexFiles indexFiles;
 } State;

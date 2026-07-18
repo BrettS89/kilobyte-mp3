@@ -13,7 +13,15 @@
 uint8_t sdInit(void);
 uint8_t sdReadBlock(uint32_t blockAddr, uint8_t *buffer);
 uint8_t sdReadBlocks(uint32_t blockAddr, uint8_t *buffer, uint32_t count);
-uint8_t sdWriteBlock(uint32_t blockAddr, const uint8_t *buffer);
+uint8_t sdWriteBlock(
+    uint32_t blockAddr,
+    const uint8_t *buffer
+);
+uint8_t sdWriteBlocks(
+    uint32_t blockAddr,
+    const uint8_t *buffer,
+    uint32_t blockCount
+);
 int shouldSkipAudioFile(const char *name);
 void listMp3Files(char filenames[][64], uint32_t *count);
 uint32_t getMp3Duration(const char *filename);

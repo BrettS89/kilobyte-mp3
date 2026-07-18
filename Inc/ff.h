@@ -445,4 +445,31 @@ void ff_mutex_give (int vol);		/* Unlock sync object */
 }
 #endif
 
+/*
+ * Stable, read-only reference captured during directory enumeration.
+ *
+ * Valid only while the same volume remains mounted. The mount_id detects
+ * unmount/remount or card replacement.
+ *
+ * FAT12/16/32 only. Not exFAT.
+ */
+typedef struct {
+    FATFS  *fs;
+    WORD    mount_id;
+    BYTE    attr;
+    DWORD   start_cluster;
+    FSIZE_t file_size;
+} FF_DIRENT_REF;
+
+FRESULT f_readdir_ref(
+    DIR *dp,
+    FILINFO *fno,
+    FF_DIRENT_REF *ref
+);
+
+FRESULT f_open_ref_read(
+    FIL *fp,
+    const FF_DIRENT_REF *ref
+);
+
 #endif /* FF_DEFINED */

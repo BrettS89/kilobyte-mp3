@@ -15,6 +15,7 @@
 #include "sdcard.h"
 #include "audio.h"
 #include "index-tracks.h"
+#include "window.h"
 
 static void homeScreenSelectInputHandler(State *state);
 static void musicScreenSelectInputHandler(State *state);
@@ -56,6 +57,9 @@ static void musicScreenSelectInputHandler(State *state) {
 	if (item.screenTrigger == SONGS) {
 		requestInitialTrackLoad();
 		state->trackList.cursorIndex = 0;
+	}	if (item.screenTrigger == ARTISTS) {
+		requestInitialArtistLoad();
+		state->artistList.cursorIndex = 0;
 	}
 }
 

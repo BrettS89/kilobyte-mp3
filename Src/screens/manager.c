@@ -31,6 +31,9 @@ void drawScreen(State *state) {
 			drawPlayerScreen(state);
 			break;
 
+		case ARTISTS:
+			drawArtistsScreen(state);
+
 		default:
 			break;
 	}
