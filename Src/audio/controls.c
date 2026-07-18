@@ -30,6 +30,6 @@ void playAudioFile(State *state, TrackRecord *trackPtr) {
 	state->playbackContext.nextTrackIsLoaded = false;
 	state->playbackContext.nextTrackIsValid = true;
 
-	audioRequestPlayFile(state->player.filename);
+	audioRequestPlayFile(&state->player.track);
 }
 

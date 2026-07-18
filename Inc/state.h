@@ -30,6 +30,8 @@ typedef struct {
     char artist[64];
     char album[64];
     uint32_t duration;
+    uint32_t startCluster;
+    uint32_t fileSize;
 } __attribute__((packed)) TrackRecord;
 
 typedef enum {

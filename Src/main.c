@@ -29,28 +29,27 @@ int main() {
 		printf("Mount failed: %d\r\n", res);
 	}
 
-	wipeSystemDir();
-
-	printf("Beginning track index\r\n");
-
-	indexSongList();
-
-	printf("Track index built\r\n");
-
-	uint32_t t0 = millis();
-	buildGroupedIndex("/system/kilobyte.idx", "/system/grouped.idx");
-	printf("Grouped index build took %lums\r\n", (unsigned long)(millis() - t0));
-
-	printf("Grouped index built\r\n");
-
-	buildHeaderIndexes("/system/grouped.idx",
-	                   "/system/artists.idx", "/system/albums.idx");
+//	wipeSystemDir();
+//
+//	printf("Beginning track index\r\n");
+//
+//	indexSongList();
+//
+//	printf("Track index built\r\n");
+//
+//	uint32_t t0 = millis();
+//	buildGroupedIndex("/system/kilobyte.idx", "/system/grouped.idx");
+//	printf("Grouped index build took %lums\r\n", (unsigned long)(millis() - t0));
+//
+//	printf("Grouped index built\r\n");
+//
+//	buildHeaderIndexes("/system/grouped.idx",
+//	                   "/system/artists.idx", "/system/albums.idx");
 
 	printf("Artist and album indexes built\r\n");
 
 	trackIndexInit(&state);
 	artistIndexInit(&state);
-//	loadTotalTrackCount(&state.trackList.totalTracksInSystem);
 
 	printf("innn\r\n");
 	printf("total tracks %d\r\n", (int)state.trackList.totalTracksInSystem);

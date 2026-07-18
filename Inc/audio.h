@@ -26,7 +26,7 @@ void audioStop(void);
 uint32_t audioGetPosition(void);
 uint32_t audioGetPendingDuration(void);
 bool audioIsDurationReady(void);
-void audioRequestPlayFile(const char *filename);
+void audioRequestPlayFile(const TrackRecord *track);
 void playbackPrefetchNext(State *state);
 
 // AUDIO CONTROL FUNCTIONS

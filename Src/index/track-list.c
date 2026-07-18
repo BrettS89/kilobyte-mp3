@@ -1116,6 +1116,15 @@ void createTempFiles(void) {
             ) - 1U
         ] = '\0';
 
+        /*
+         * Save the MP3 file's direct SD-card location.
+         *
+         * This lets playback open the file without searching through
+         * every filename in the root directory.
+         */
+        tracks[count].startCluster = ref.start_cluster;
+        tracks[count].fileSize = ref.file_size;
+
         FIL mp3;
         bool tagsRead = false;
 
